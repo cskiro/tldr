@@ -58,11 +58,11 @@ class TestBaseModelWithConfig:
 
     def test_should_validate_default_values(self):
         """Test that default values are validated."""
-        
+
         # Pydantic V2 validates on instantiation, not class definition
         class TestModel(BaseModelWithConfig):
             value: int = "invalid_default"  # type: ignore
-            
+
         # The validation happens when creating an instance
         with pytest.raises((ValidationError, ValueError)):
             TestModel()
