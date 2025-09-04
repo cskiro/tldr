@@ -54,11 +54,11 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
 def setup_logging(log_level: str = "INFO", log_format: str = "json") -> logging.Logger:
     """
     Set up structured logging for the application.
-    
+
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         log_format: Log format ("json" or "text")
-    
+
     Returns:
         Configured logger instance
     """
@@ -103,10 +103,10 @@ def setup_logging(log_level: str = "INFO", log_format: str = "json") -> logging.
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance for the given name.
-    
+
     Args:
         name: Logger name (typically __name__)
-    
+
     Returns:
         Logger instance
     """
@@ -116,10 +116,10 @@ def get_logger(name: str) -> logging.Logger:
 def set_request_id(request_id: str | None = None) -> str:
     """
     Set request ID in context for request tracing.
-    
+
     Args:
         request_id: Custom request ID or None to generate one
-    
+
     Returns:
         The request ID that was set
     """
@@ -133,7 +133,7 @@ def set_request_id(request_id: str | None = None) -> str:
 def get_request_id() -> str | None:
     """
     Get current request ID from context.
-    
+
     Returns:
         Current request ID or None if not set
     """
