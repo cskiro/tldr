@@ -90,10 +90,32 @@ async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
         # Ensure upload directory exists
         os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-        # Generate safe filename
-        file_extension = os.path.splitext(file.filename or "audio.mp3")[1]
+        # Generate safe filename with validated extension
+        original_filename = file.filename or "audio.mp3"
+
+        # Extract and validate file extension securely
+        file_extension = os.path.splitext(original_filename)[1].lower()
+
+        # Whitelist allowed extensions to prevent path injection
+        allowed_extensions = {'.mp3', '.mp4', '.wav', '.m4a', '.ogg'}
+        if file_extension not in allowed_extensions:
+            file_extension = '.mp3'  # Default to safe extension
+
+        # Create safe filename using only validated components
         safe_filename = f"{meeting_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
+
+        # Ensure the filename is safe and normalize the path
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
+        file_path = os.path.normpath(file_path)
+
+        # Verify the final path is within the upload directory (prevent directory traversal)
+        if not file_path.startswith(os.path.normpath(UPLOAD_DIR)):
+            raise ProcessingError(
+                meeting_id=meeting_id,
+                stage="file_upload",
+                details="Invalid file path detected",
+                original_error=None
+            )
 
         # Save file
         async with aiofiles.open(file_path, 'wb') as f:
