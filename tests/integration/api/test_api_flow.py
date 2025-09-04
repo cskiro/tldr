@@ -1,6 +1,5 @@
 """Integration tests for complete API workflow."""
 
-
 import pytest
 
 # Imports will be available after implementation
@@ -59,8 +58,8 @@ def sample_meeting_transcript():
         "metadata": {
             "platform": "zoom",
             "recording_id": "rec_integration_test_123",
-            "location": "Remote"
-        }
+            "location": "Remote",
+        },
     }
 
 
@@ -68,7 +67,9 @@ class TestCompleteAPIWorkflow:
     """Test complete end-to-end API workflow."""
 
     @pytest.mark.asyncio
-    async def test_should_complete_full_meeting_processing_workflow(self, client, sample_meeting_transcript):
+    async def test_should_complete_full_meeting_processing_workflow(
+        self, client, sample_meeting_transcript
+    ):
         """Test complete workflow: upload → process → retrieve → export."""
         # Step 1: Upload transcript
         # upload_response = client.post("/api/v1/transcripts/upload", json=sample_meeting_transcript)
@@ -169,7 +170,9 @@ class TestCompleteAPIWorkflow:
         # assert status_data["data"]["status"] in ["processing", "completed"]
         pytest.skip("Audio workflow not implemented yet")
 
-    def test_should_handle_concurrent_processing_requests(self, client, sample_meeting_transcript):
+    def test_should_handle_concurrent_processing_requests(
+        self, client, sample_meeting_transcript
+    ):
         """Test handling of concurrent processing requests."""
         # meeting_ids = [f"concurrent_test_{i}" for i in range(5)]
         #
@@ -197,7 +200,9 @@ class TestCompleteAPIWorkflow:
         #     assert data["data"]["status"] == "processing"
         pytest.skip("Concurrent processing not implemented yet")
 
-    def test_should_handle_processing_failures_gracefully(self, client, sample_meeting_transcript):
+    def test_should_handle_processing_failures_gracefully(
+        self, client, sample_meeting_transcript
+    ):
         """Test graceful handling of processing failures."""
         # # Upload transcript
         # upload_response = client.post("/api/v1/transcripts/upload", json=sample_meeting_transcript)
@@ -257,7 +262,9 @@ class TestAPIPerformanceAndScaling:
         # assert status_response.status_code == 200
         pytest.skip("Large transcript handling not implemented yet")
 
-    def test_should_respond_within_acceptable_timeouts(self, client, sample_meeting_transcript):
+    def test_should_respond_within_acceptable_timeouts(
+        self, client, sample_meeting_transcript
+    ):
         """Test API response times are within acceptable limits."""
         # import time
 

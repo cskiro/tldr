@@ -34,7 +34,7 @@ class ProcessingService:
         self.summarization_service = summarization_service or MockSummarizationService()
         service_logger.info(
             "ProcessingService initialized",
-            summarization_service=type(self.summarization_service).__name__
+            summarization_service=type(self.summarization_service).__name__,
         )
 
     async def process_meeting(
@@ -42,7 +42,7 @@ class ProcessingService:
         meeting_id: str,
         meetings_storage: dict[str, dict[str, Any]],
         processing_status_storage: dict[str, ProcessingStatus],
-        summaries_storage: dict[str, Any]
+        summaries_storage: dict[str, Any],
     ) -> None:
         """
         Process a meeting transcript through the full AI pipeline.
@@ -66,7 +66,7 @@ class ProcessingService:
                 raise ProcessingError(
                     meeting_id=meeting_id,
                     stage="validation",
-                    details="Meeting not found in storage"
+                    details="Meeting not found in storage",
                 )
 
             # Get meeting data
@@ -77,31 +77,32 @@ class ProcessingService:
                 meeting_id,
                 processing_status_storage,
                 TranscriptStatus.PROCESSING,
-                progress=10
+                progress=10,
             )
 
             # Extract transcript text
-            transcript_text = await self._extract_transcript_text(meeting_id, meeting_data)
+            transcript_text = await self._extract_transcript_text(
+                meeting_id, meeting_data
+            )
 
             # Update progress
             await self._update_processing_status(
                 meeting_id,
                 processing_status_storage,
                 TranscriptStatus.PROCESSING,
-                progress=30
+                progress=30,
             )
 
             # Process through AI service
             processing_logger.log_processing_start(
                 meeting_id=meeting_id,
                 processing_type="ai_summarization",
-                text_length=len(transcript_text)
+                text_length=len(transcript_text),
             )
 
             # Call summarization service
             summary = await self.summarization_service.summarize_transcript(
-                meeting_id=meeting_id,
-                transcript_text=transcript_text
+                meeting_id=meeting_id, transcript_text=transcript_text
             )
 
             # Update progress
@@ -109,7 +110,7 @@ class ProcessingService:
                 meeting_id,
                 processing_status_storage,
                 TranscriptStatus.PROCESSING,
-                progress=80
+                progress=80,
             )
 
             # Store the summary
@@ -120,7 +121,7 @@ class ProcessingService:
                 meeting_id,
                 processing_status_storage,
                 TranscriptStatus.COMPLETED,
-                progress=100
+                progress=100,
             )
 
             processing_time = time.time() - start_time
@@ -131,7 +132,7 @@ class ProcessingService:
                 duration_seconds=processing_time,
                 summary_confidence=summary.confidence_score,
                 action_items_count=len(summary.action_items),
-                decisions_count=len(summary.decisions)
+                decisions_count=len(summary.decisions),
             )
 
             service_logger.info(
@@ -139,27 +140,33 @@ class ProcessingService:
                 processing_time_seconds=round(processing_time, 2),
                 action_items_count=len(summary.action_items),
                 decisions_count=len(summary.decisions),
-                confidence_score=round(summary.confidence_score, 2)
+                confidence_score=round(summary.confidence_score, 2),
             )
 
         except ProcessingError as e:
             # Re-raise ProcessingError as-is
-            await self._handle_processing_error(meeting_id, processing_status_storage, str(e))
+            await self._handle_processing_error(
+                meeting_id, processing_status_storage, str(e)
+            )
             raise
 
         except Exception as e:
             # Wrap other exceptions in ProcessingError
             error_message = f"Unexpected error during processing: {str(e)}"
-            await self._handle_processing_error(meeting_id, processing_status_storage, error_message)
+            await self._handle_processing_error(
+                meeting_id, processing_status_storage, error_message
+            )
 
             raise ProcessingError(
                 meeting_id=meeting_id,
                 stage="processing",
                 details=error_message,
-                original_error=e
+                original_error=e,
             ) from e
 
-    async def _extract_transcript_text(self, meeting_id: str, meeting_data: dict[str, Any]) -> str:
+    async def _extract_transcript_text(
+        self, meeting_id: str, meeting_data: dict[str, Any]
+    ) -> str:
         """
         Extract transcript text from meeting data.
 
@@ -185,14 +192,14 @@ class ProcessingService:
                 raise ProcessingError(
                     meeting_id=meeting_id,
                     stage="transcription",
-                    details="Audio transcription not implemented in mock service"
+                    details="Audio transcription not implemented in mock service",
                 )
 
             # No valid input found
             raise ProcessingError(
                 meeting_id=meeting_id,
                 stage="input_validation",
-                details="No transcript text or audio file found"
+                details="No transcript text or audio file found",
             )
 
         except ProcessingError:
@@ -202,7 +209,7 @@ class ProcessingService:
                 meeting_id=meeting_id,
                 stage="text_extraction",
                 details=f"Failed to extract transcript text: {str(e)}",
-                original_error=e
+                original_error=e,
             ) from e
 
     async def _update_processing_status(
@@ -210,7 +217,7 @@ class ProcessingService:
         meeting_id: str,
         processing_status_storage: dict[str, ProcessingStatus],
         status: TranscriptStatus,
-        progress: int = None
+        progress: int = None,
     ) -> None:
         """
         Update processing status in storage.
@@ -233,21 +240,21 @@ class ProcessingService:
                 processing_status = ProcessingStatus(
                     meeting_id=meeting_id,
                     status=status,
-                    progress_percentage=progress or 0
+                    progress_percentage=progress or 0,
                 )
                 processing_status_storage[meeting_id] = processing_status
 
             service_logger.debug(
                 f"Updated processing status for meeting: {meeting_id}",
                 status=status.value,
-                progress=progress
+                progress=progress,
             )
 
         except Exception as e:
             service_logger.error(
                 f"Failed to update processing status for meeting: {meeting_id}",
                 error=str(e),
-                error_type=type(e).__name__
+                error_type=type(e).__name__,
             )
             # Don't raise - status update failure shouldn't stop processing
 
@@ -255,7 +262,7 @@ class ProcessingService:
         self,
         meeting_id: str,
         processing_status_storage: dict[str, ProcessingStatus],
-        error_message: str
+        error_message: str,
     ) -> None:
         """
         Handle processing error by updating status and logging.
@@ -273,19 +280,19 @@ class ProcessingService:
             processing_logger.log_processing_error(
                 meeting_id=meeting_id,
                 processing_type="full_pipeline",
-                error=error_message
+                error=error_message,
             )
 
             service_logger.error(
                 f"Processing failed for meeting: {meeting_id}",
-                error_message=error_message
+                error_message=error_message,
             )
 
         except Exception as e:
             service_logger.error(
                 f"Failed to handle processing error for meeting: {meeting_id}",
                 original_error=error_message,
-                handling_error=str(e)
+                handling_error=str(e),
             )
 
 
@@ -308,7 +315,7 @@ async def process_meeting_background(
     meeting_id: str,
     meetings_storage: dict[str, dict[str, Any]],
     processing_status_storage: dict[str, ProcessingStatus],
-    summaries_storage: dict[str, Any]
+    summaries_storage: dict[str, Any],
 ) -> None:
     """
     Background task wrapper for processing meetings.
@@ -329,15 +336,17 @@ async def process_meeting_background(
             meeting_id=meeting_id,
             meetings_storage=meetings_storage,
             processing_status_storage=processing_status_storage,
-            summaries_storage=summaries_storage
+            summaries_storage=summaries_storage,
         )
 
-        service_logger.info(f"Background processing completed for meeting: {meeting_id}")
+        service_logger.info(
+            f"Background processing completed for meeting: {meeting_id}"
+        )
 
     except Exception as e:
         service_logger.error(
             f"Background processing failed for meeting: {meeting_id}",
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         # Error handling is already done in process_meeting, just log here

@@ -53,10 +53,9 @@ class TestTranscriptInput:
     def test_should_accept_custom_meeting_date(self, valid_transcript_data):
         """Test that custom meeting_date can be provided."""
         custom_date = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
-        transcript = TranscriptInput(**{
-            **valid_transcript_data,
-            "meeting_date": custom_date
-        })
+        transcript = TranscriptInput(
+            **{**valid_transcript_data, "meeting_date": custom_date}
+        )
 
         assert transcript.meeting_date == custom_date
 
@@ -64,10 +63,9 @@ class TestTranscriptInput:
         """Test meeting ID format validation."""
         # Invalid characters
         with pytest.raises(ValueError, match="String should match pattern"):
-            TranscriptInput(**{
-                **valid_transcript_data,
-                "meeting_id": "meeting@with#special$chars"
-            })
+            TranscriptInput(
+                **{**valid_transcript_data, "meeting_id": "meeting@with#special$chars"}
+            )
 
         # Too short
         with pytest.raises(ValueError, match="at least 1 characters"):
@@ -87,10 +85,9 @@ class TestTranscriptInput:
         ]
 
         for meeting_id in valid_ids:
-            transcript = TranscriptInput(**{
-                **valid_transcript_data,
-                "meeting_id": meeting_id
-            })
+            transcript = TranscriptInput(
+                **{**valid_transcript_data, "meeting_id": meeting_id}
+            )
             assert transcript.meeting_id == meeting_id
 
     def test_should_validate_raw_text_length(self, valid_transcript_data):
@@ -108,11 +105,13 @@ class TestTranscriptInput:
         """Test audio URL format validation."""
         # Invalid format
         with pytest.raises(ValueError, match="String should match pattern"):
-            TranscriptInput(**{
-                **valid_transcript_data,
-                "audio_url": "not-a-valid-url",
-                "raw_text": None
-            })
+            TranscriptInput(
+                **{
+                    **valid_transcript_data,
+                    "audio_url": "not-a-valid-url",
+                    "raw_text": None,
+                }
+            )
 
         # Valid URLs
         valid_urls = [
@@ -123,21 +122,19 @@ class TestTranscriptInput:
         ]
 
         for url in valid_urls:
-            transcript = TranscriptInput(**{
-                **valid_transcript_data,
-                "audio_url": url,
-                "raw_text": None
-            })
+            transcript = TranscriptInput(
+                **{**valid_transcript_data, "audio_url": url, "raw_text": None}
+            )
             assert transcript.audio_url == url
 
     def test_should_require_content_source(self, valid_transcript_data):
         """Test that either raw_text or audio_url is required."""
-        with pytest.raises(ValueError, match="Either raw_text or audio_url must be provided"):
-            TranscriptInput(**{
-                **valid_transcript_data,
-                "raw_text": None,
-                "audio_url": None
-            })
+        with pytest.raises(
+            ValueError, match="Either raw_text or audio_url must be provided"
+        ):
+            TranscriptInput(
+                **{**valid_transcript_data, "raw_text": None, "audio_url": None}
+            )
 
     def test_should_validate_participants_list(self, valid_transcript_data):
         """Test participants list validation."""
@@ -161,10 +158,9 @@ class TestTranscriptInput:
             "   ",  # Whitespace only
         ]
 
-        transcript = TranscriptInput(**{
-            **valid_transcript_data,
-            "participants": messy_participants
-        })
+        transcript = TranscriptInput(
+            **{**valid_transcript_data, "participants": messy_participants}
+        )
 
         # Should be cleaned: trimmed, deduplicated (case-insensitive), empty removed
         expected = ["John Smith", "ALICE JOHNSON", "Bob Wilson"]
@@ -182,27 +178,27 @@ class TestTranscriptInput:
 
         # Valid durations
         for duration in [1, 60, 240, 480]:
-            transcript = TranscriptInput(**{
-                **valid_transcript_data,
-                "duration_minutes": duration
-            })
+            transcript = TranscriptInput(
+                **{**valid_transcript_data, "duration_minutes": duration}
+            )
             assert transcript.duration_minutes == duration
 
     def test_should_handle_all_meeting_types(self, valid_transcript_data):
         """Test that all meeting types work correctly."""
         for meeting_type in MeetingType:
-            transcript = TranscriptInput(**{
-                **valid_transcript_data,
-                "meeting_type": meeting_type
-            })
+            transcript = TranscriptInput(
+                **{**valid_transcript_data, "meeting_type": meeting_type}
+            )
             assert transcript.meeting_type == meeting_type
 
     def test_should_serialize_correctly(self, valid_transcript_data):
         """Test TranscriptInput serialization."""
-        transcript = TranscriptInput(**{
-            **valid_transcript_data,
-            "metadata": {"platform": "zoom", "recording_id": "123456"}
-        })
+        transcript = TranscriptInput(
+            **{
+                **valid_transcript_data,
+                "metadata": {"platform": "zoom", "recording_id": "123456"},
+            }
+        )
 
         data = transcript.model_dump()
 
@@ -225,7 +221,7 @@ class TestMeetingSummary:
         return ActionItem(
             task="Complete budget analysis",
             assignee="Alice Johnson",
-            status=ActionItemStatus.PENDING
+            status=ActionItemStatus.PENDING,
         )
 
     @pytest.fixture
@@ -234,7 +230,7 @@ class TestMeetingSummary:
         return Decision(
             decision="Use React for frontend",
             made_by="CTO",
-            rationale="Better team expertise"
+            rationale="Better team expertise",
         )
 
     @pytest.fixture
@@ -319,7 +315,9 @@ class TestMeetingSummary:
 
         # Valid scores
         for score in [0.0, 0.5, 1.0]:
-            summary = MeetingSummary(**{**valid_summary_data, "confidence_score": score})
+            summary = MeetingSummary(
+                **{**valid_summary_data, "confidence_score": score}
+            )
             assert summary.confidence_score == score
 
     def test_should_validate_processing_time(self, valid_summary_data):
@@ -330,7 +328,9 @@ class TestMeetingSummary:
 
         # Valid times
         for time_val in [0.0, 5.5, 120.0]:
-            summary = MeetingSummary(**{**valid_summary_data, "processing_time_seconds": time_val})
+            summary = MeetingSummary(
+                **{**valid_summary_data, "processing_time_seconds": time_val}
+            )
             assert summary.processing_time_seconds == time_val
 
     def test_should_compute_total_items(self, valid_summary_data):
@@ -341,20 +341,17 @@ class TestMeetingSummary:
         assert summary.total_items == 2
 
         # Test with no items
-        summary_empty = MeetingSummary(**{
-            **valid_summary_data,
-            "action_items": [],
-            "decisions": []
-        })
+        summary_empty = MeetingSummary(
+            **{**valid_summary_data, "action_items": [], "decisions": []}
+        )
         assert summary_empty.total_items == 0
 
-    def test_should_compute_completion_percentage(self, valid_summary_data, sample_action_item):
+    def test_should_compute_completion_percentage(
+        self, valid_summary_data, sample_action_item
+    ):
         """Test completion_percentage computed field."""
         # Test with no action items
-        summary_no_items = MeetingSummary(**{
-            **valid_summary_data,
-            "action_items": []
-        })
+        summary_no_items = MeetingSummary(**{**valid_summary_data, "action_items": []})
         assert summary_no_items.completion_percentage == 100.0
 
         # Test with pending action item
@@ -363,14 +360,14 @@ class TestMeetingSummary:
 
         # Test with completed action item
         completed_item = ActionItem(
-            task="Completed task",
-            assignee="Alice",
-            status=ActionItemStatus.COMPLETED
+            task="Completed task", assignee="Alice", status=ActionItemStatus.COMPLETED
         )
-        summary_completed = MeetingSummary(**{
-            **valid_summary_data,
-            "action_items": [sample_action_item, completed_item]
-        })
+        summary_completed = MeetingSummary(
+            **{
+                **valid_summary_data,
+                "action_items": [sample_action_item, completed_item],
+            }
+        )
         assert summary_completed.completion_percentage == 50.0  # 1 of 2 completed
 
 
@@ -407,10 +404,9 @@ class TestProcessingStatus:
 
         # Valid percentages
         for percentage in [0, 50, 100]:
-            status = ProcessingStatus(**{
-                **valid_status_data,
-                "progress_percentage": percentage
-            })
+            status = ProcessingStatus(
+                **{**valid_status_data, "progress_percentage": percentage}
+            )
             assert status.progress_percentage == percentage
 
     def test_should_mark_processing_correctly(self, valid_status_data):
@@ -453,19 +449,20 @@ class TestProcessingStatus:
     def test_should_handle_all_status_values(self, valid_status_data):
         """Test that all transcript status values work correctly."""
         for transcript_status in TranscriptStatus:
-            status = ProcessingStatus(**{
-                **valid_status_data,
-                "status": transcript_status
-            })
+            status = ProcessingStatus(
+                **{**valid_status_data, "status": transcript_status}
+            )
             assert status.status == transcript_status
 
     def test_should_serialize_correctly(self, valid_status_data):
         """Test ProcessingStatus serialization."""
-        status = ProcessingStatus(**{
-            **valid_status_data,
-            "progress_percentage": 75,
-            "error_message": "Partial failure"
-        })
+        status = ProcessingStatus(
+            **{
+                **valid_status_data,
+                "progress_percentage": 75,
+                "error_message": "Partial failure",
+            }
+        )
 
         data = status.model_dump()
 

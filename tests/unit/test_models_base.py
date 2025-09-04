@@ -59,6 +59,7 @@ class TestBaseModelWithConfig:
         """Test that default values are validated."""
 
         with pytest.raises(ValueError):
+
             class TestModel(BaseModelWithConfig):
                 value: int = "invalid_default"
 
@@ -89,6 +90,7 @@ class TestTimestampedModel:
 
         # Small delay to ensure different timestamps
         import time
+
         time.sleep(0.01)
 
         model.mark_updated()
@@ -104,6 +106,7 @@ class TestTimestampedModel:
         first_update = model.updated_at
 
         import time
+
         time.sleep(0.01)
 
         model.mark_updated()
@@ -171,10 +174,7 @@ class TestAPIResponse:
         """Test that APIResponse validates its structure."""
         # Valid response
         response = APIResponse(
-            success=True,
-            message="Test",
-            data={"test": True},
-            errors=None
+            success=True, message="Test", data={"test": True}, errors=None
         )
         assert response.success is True
 
@@ -185,8 +185,7 @@ class TestAPIResponse:
     def test_should_serialize_to_dict(self):
         """Test that APIResponse serializes correctly."""
         response = APIResponse.success_response(
-            data={"test": "value"},
-            message="Success"
+            data={"test": "value"}, message="Success"
         )
 
         response_dict = response.model_dump()
@@ -195,7 +194,7 @@ class TestAPIResponse:
             "success": True,
             "message": "Success",
             "data": {"test": "value"},
-            "errors": None
+            "errors": None,
         }
 
         assert response_dict == expected
@@ -225,10 +224,7 @@ class TestPaginatedResponse:
         size = 10
 
         response = PaginatedResponse.create(
-            items=items,
-            total=total,
-            page=page,
-            size=size
+            items=items, total=total, page=page, size=size
         )
 
         assert response.items == items
@@ -239,31 +235,19 @@ class TestPaginatedResponse:
 
     def test_should_calculate_pages_correctly_for_exact_division(self):
         """Test page calculation when total divides evenly."""
-        response = PaginatedResponse.create(
-            items=[],
-            total=40,
-            size=10
-        )
+        response = PaginatedResponse.create(items=[], total=40, size=10)
 
         assert response.pages == 4
 
     def test_should_calculate_pages_correctly_for_partial_last_page(self):
         """Test page calculation with partial last page."""
-        response = PaginatedResponse.create(
-            items=[],
-            total=41,
-            size=10
-        )
+        response = PaginatedResponse.create(items=[], total=41, size=10)
 
         assert response.pages == 5
 
     def test_should_handle_zero_total(self):
         """Test handling of zero total items."""
-        response = PaginatedResponse.create(
-            items=[],
-            total=0,
-            size=10
-        )
+        response = PaginatedResponse.create(items=[], total=0, size=10)
 
         assert response.items == []
         assert response.total == 0
@@ -272,23 +256,13 @@ class TestPaginatedResponse:
     def test_should_validate_pagination_constraints(self):
         """Test that pagination validates constraints."""
         # Valid pagination
-        response = PaginatedResponse(
-            items=[1, 2, 3],
-            total=3,
-            page=1,
-            size=10,
-            pages=1
-        )
+        response = PaginatedResponse(items=[1, 2, 3], total=3, page=1, size=10, pages=1)
         assert response.page == 1
 
         # Test validation constraints
         with pytest.raises(ValueError):
             PaginatedResponse(
-                items=[],
-                total=-1,  # Invalid: negative total
-                page=1,
-                size=10,
-                pages=1
+                items=[], total=-1, page=1, size=10, pages=1  # Invalid: negative total
             )
 
         with pytest.raises(ValueError):
@@ -297,36 +271,21 @@ class TestPaginatedResponse:
                 total=10,
                 page=0,  # Invalid: page must be >= 1
                 size=10,
-                pages=1
+                pages=1,
             )
 
         with pytest.raises(ValueError):
             PaginatedResponse(
-                items=[],
-                total=10,
-                page=1,
-                size=101,  # Invalid: size too large
-                pages=1
+                items=[], total=10, page=1, size=101, pages=1  # Invalid: size too large
             )
 
     def test_should_serialize_correctly(self):
         """Test that PaginatedResponse serializes correctly."""
         items = ["item1", "item2"]
-        response = PaginatedResponse.create(
-            items=items,
-            total=25,
-            page=2,
-            size=5
-        )
+        response = PaginatedResponse.create(items=items, total=25, page=2, size=5)
 
         response_dict = response.model_dump()
 
-        expected = {
-            "items": items,
-            "total": 25,
-            "page": 2,
-            "size": 5,
-            "pages": 5
-        }
+        expected = {"items": items, "total": 25, "page": 2, "size": 5, "pages": 5}
 
         assert response_dict == expected

@@ -34,32 +34,34 @@ def sample_meeting_summary():
                 assignee="Alice Johnson",
                 status=ActionItemStatus.PENDING,
                 priority=ActionItemPriority.HIGH,
-                due_date=datetime.now(UTC).replace(hour=23, minute=59, second=59)
+                due_date=datetime.now(UTC).replace(hour=23, minute=59, second=59),
             ),
             ActionItem(
                 task="Set up development environment",
                 assignee="Bob Smith",
                 status=ActionItemStatus.IN_PROGRESS,
-                priority=ActionItemPriority.MEDIUM
-            )
+                priority=ActionItemPriority.MEDIUM,
+            ),
         ],
         decisions=[
             Decision(
                 decision="Use React for frontend framework",
                 made_by="Carol Davis (Tech Lead)",
                 rationale="Better team expertise and component reusability",
-                impact=DecisionImpact.HIGH
+                impact=DecisionImpact.HIGH,
             )
         ],
         confidence_score=0.89,
-        processing_time_seconds=15.3
+        processing_time_seconds=15.3,
     )
 
 
 class TestSummaryRetrievalEndpoint:
     """Test summary retrieval endpoint functionality."""
 
-    def test_should_retrieve_completed_summary_successfully(self, client, sample_meeting_summary):
+    def test_should_retrieve_completed_summary_successfully(
+        self, client, sample_meeting_summary
+    ):
         """Test successful summary retrieval."""
         # with patch('src.services.summary_service.get_summary') as mock_get:
         #     mock_get.return_value = sample_meeting_summary
@@ -127,7 +129,9 @@ class TestSummaryRetrievalEndpoint:
         # assert all(item["status"] == "pending" for item in action_items)
         pytest.skip("Endpoint not implemented yet")
 
-    def test_should_include_metadata_when_available(self, client, sample_meeting_summary):
+    def test_should_include_metadata_when_available(
+        self, client, sample_meeting_summary
+    ):
         """Test summary includes meeting metadata."""
         # with patch('src.services.summary_service.get_summary') as mock_get:
         #     summary_with_metadata = sample_meeting_summary

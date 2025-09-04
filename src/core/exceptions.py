@@ -13,7 +13,7 @@ class TLDRException(Exception):
         message: str,
         status_code: int = 500,
         error_code: str = "INTERNAL_ERROR",
-        details: dict[str, Any] | None = None
+        details: dict[str, Any] | None = None,
     ):
         self.message = message
         self.status_code = status_code
@@ -32,7 +32,7 @@ class MeetingNotFoundError(TLDRException):
             message=message,
             status_code=404,
             error_code="MEETING_NOT_FOUND",
-            details={"meeting_id": meeting_id}
+            details={"meeting_id": meeting_id},
         )
 
 
@@ -46,7 +46,7 @@ class DuplicateMeetingError(TLDRException):
             message=message,
             status_code=409,
             error_code="DUPLICATE_MEETING",
-            details={"meeting_id": meeting_id}
+            details={"meeting_id": meeting_id},
         )
 
 
@@ -58,7 +58,7 @@ class ProcessingError(TLDRException):
         meeting_id: str,
         stage: str,
         details: str,
-        original_error: Exception | None = None
+        original_error: Exception | None = None,
     ):
         self.meeting_id = meeting_id
         self.stage = stage
@@ -74,8 +74,8 @@ class ProcessingError(TLDRException):
                 "meeting_id": meeting_id,
                 "stage": stage,
                 "details": details,
-                "original_error": str(original_error) if original_error else None
-            }
+                "original_error": str(original_error) if original_error else None,
+            },
         )
 
 
@@ -86,14 +86,16 @@ class ValidationError(TLDRException):
         self.field_errors = field_errors
 
         if message is None:
-            error_details = ", ".join([f"{field}: {error}" for field, error in field_errors.items()])
+            error_details = ", ".join(
+                [f"{field}: {error}" for field, error in field_errors.items()]
+            )
             message = f"Validation failed: {error_details}"
 
         super().__init__(
             message=message,
             status_code=422,
             error_code="VALIDATION_ERROR",
-            details={"field_errors": field_errors}
+            details={"field_errors": field_errors},
         )
 
 
@@ -106,7 +108,7 @@ class FileTooLargeError(TLDRException):
 
         def format_size(size_bytes: int) -> str:
             """Format size in bytes to human readable format."""
-            for unit in ['B', 'KB', 'MB', 'GB']:
+            for unit in ["B", "KB", "MB", "GB"]:
                 if size_bytes < 1024.0:
                     return f"{size_bytes:.1f}{unit}"
                 size_bytes /= 1024.0
@@ -125,8 +127,8 @@ class FileTooLargeError(TLDRException):
                 "actual_size": actual_size,
                 "max_size": max_size,
                 "actual_size_formatted": format_size(actual_size),
-                "max_size_formatted": format_size(max_size)
-            }
+                "max_size_formatted": format_size(max_size),
+            },
         )
 
 
@@ -148,8 +150,8 @@ class UnsupportedFormatError(TLDRException):
             error_code="UNSUPPORTED_FORMAT",
             details={
                 "format_type": format_type,
-                "supported_formats": supported_formats
-            }
+                "supported_formats": supported_formats,
+            },
         )
 
 
@@ -166,17 +168,16 @@ class ExternalServiceError(TLDRException):
             message=message,
             status_code=status_code,
             error_code="EXTERNAL_SERVICE_ERROR",
-            details={
-                "service_name": service_name,
-                "service_error": service_error
-            }
+            details={"service_name": service_name, "service_error": service_error},
         )
 
 
 class DatabaseError(TLDRException):
     """Exception raised for database operation failures."""
 
-    def __init__(self, operation: str, details: str, original_error: Exception | None = None):
+    def __init__(
+        self, operation: str, details: str, original_error: Exception | None = None
+    ):
         self.operation = operation
         self.db_details = details
         self.original_error = original_error
@@ -190,8 +191,8 @@ class DatabaseError(TLDRException):
             details={
                 "operation": operation,
                 "details": details,
-                "original_error": str(original_error) if original_error else None
-            }
+                "original_error": str(original_error) if original_error else None,
+            },
         )
 
 
@@ -215,8 +216,8 @@ class RateLimitError(TLDRException):
             details={
                 "limit": limit,
                 "window_seconds": window_seconds,
-                "retry_after": retry_after
-            }
+                "retry_after": retry_after,
+            },
         )
 
 
@@ -225,9 +226,7 @@ class AuthenticationError(TLDRException):
 
     def __init__(self, message: str = "Authentication required"):
         super().__init__(
-            message=message,
-            status_code=401,
-            error_code="AUTHENTICATION_ERROR"
+            message=message, status_code=401, error_code="AUTHENTICATION_ERROR"
         )
 
 
@@ -236,9 +235,7 @@ class AuthorizationError(TLDRException):
 
     def __init__(self, message: str = "Insufficient permissions"):
         super().__init__(
-            message=message,
-            status_code=403,
-            error_code="AUTHORIZATION_ERROR"
+            message=message, status_code=403, error_code="AUTHORIZATION_ERROR"
         )
 
 
@@ -250,6 +247,6 @@ def to_http_exception(tldr_exception: TLDRException) -> HTTPException:
             "success": False,
             "error_code": tldr_exception.error_code,
             "message": tldr_exception.message,
-            "details": tldr_exception.details
-        }
+            "details": tldr_exception.details,
+        },
     )

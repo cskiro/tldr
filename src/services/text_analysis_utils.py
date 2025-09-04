@@ -28,7 +28,9 @@ def extract_participants_from_transcript(text: str) -> list[str]:
     participants.update(matches)
 
     # Pattern 3: "Name said" or "Name mentioned"
-    said_pattern = r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:said|mentioned|asked|replied|responded)"
+    said_pattern = (
+        r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:said|mentioned|asked|replied|responded)"
+    )
     matches = re.findall(said_pattern, text)
     participants.update(matches)
 
@@ -38,7 +40,21 @@ def extract_participants_from_transcript(text: str) -> list[str]:
     participants.update(matches)
 
     # Filter out common false positives
-    false_positives = {"The", "This", "That", "And", "But", "So", "Or", "If", "When", "Where", "How", "What", "Why"}
+    false_positives = {
+        "The",
+        "This",
+        "That",
+        "And",
+        "But",
+        "So",
+        "Or",
+        "If",
+        "When",
+        "Where",
+        "How",
+        "What",
+        "Why",
+    }
     participants = {p for p in participants if p not in false_positives and len(p) > 1}
 
     return sorted(participants)
@@ -60,16 +76,13 @@ def extract_action_items_from_text(text: str) -> list[dict[str, Any]]:
     patterns = [
         # Direct action item mentions
         (r"(?i)(?:TODO|Action item|Follow up)[:.]?\s*(.+)", "high"),
-
         # Assignment patterns
         (r"(?i)(\w+)\s+(?:will|should|needs? to|has to|must)\s+(.+)", "medium"),
         (r"(?i)(?:assign|assigned to|give to)\s+(\w+)[:.]?\s*(.+)", "medium"),
         (r"(?i)(@\w+|by \w+)[:.]?\s*(.+)", "medium"),
-
         # Next steps patterns
         (r"(?i)(?:next steps?|action)[:.]?\s*(.+)", "medium"),
         (r"(?i)(?:we need to|let's|going to)\s+(.+)", "low"),
-
         # Deadline patterns
         (r"(?i)(.+?)\s+(?:by|due|before)\s+(\w+day|\d+/\d+|\w+\s+\d+)", "high"),
     ]
@@ -80,7 +93,10 @@ def extract_action_items_from_text(text: str) -> list[dict[str, Any]]:
             if isinstance(match, tuple):
                 if len(match) == 2:
                     # Handle (assignee, task) or (task, deadline) patterns
-                    if any(keyword in match[0].lower() for keyword in ['will', 'should', 'need', 'must', 'assign']):
+                    if any(
+                        keyword in match[0].lower()
+                        for keyword in ["will", "should", "need", "must", "assign"]
+                    ):
                         assignee, task = match
                     else:
                         task, assignee = match
@@ -96,14 +112,16 @@ def extract_action_items_from_text(text: str) -> list[dict[str, Any]]:
             assignee = _clean_assignee_text(assignee)
 
             if len(task) > 10 and not _is_noise(task):  # Filter out noise
-                action_items.append({
-                    "task": task,
-                    "assignee": assignee,
-                    "priority": _infer_priority(task, default_priority),
-                    "status": "pending",
-                    "context": _extract_context_around_text(text, task),
-                    "due_date": _extract_due_date(task)
-                })
+                action_items.append(
+                    {
+                        "task": task,
+                        "assignee": assignee,
+                        "priority": _infer_priority(task, default_priority),
+                        "status": "pending",
+                        "context": _extract_context_around_text(text, task),
+                        "due_date": _extract_due_date(task),
+                    }
+                )
 
     # Remove duplicates based on task similarity
     return _deduplicate_action_items(action_items)
@@ -125,15 +143,18 @@ def extract_decisions_from_text(text: str) -> list[dict[str, Any]]:
         # Direct decision statements
         (r"(?i)(?:decided|agreed|resolved|concluded)[:.]?\s*(.+)", "approved"),
         (r"(?i)(?:decision|choice|vote)[:.]?\s*(.+)", "approved"),
-
         # Approval patterns
-        (r"(?i)(?:approve|approved|accept|accepted|confirm|confirmed)[:.]?\s*(.+)", "approved"),
-        (r"(?i)(?:reject|rejected|deny|denied|decline|declined)[:.]?\s*(.+)", "rejected"),
-
+        (
+            r"(?i)(?:approve|approved|accept|accepted|confirm|confirmed)[:.]?\s*(.+)",
+            "approved",
+        ),
+        (
+            r"(?i)(?:reject|rejected|deny|denied|decline|declined)[:.]?\s*(.+)",
+            "rejected",
+        ),
         # Consensus patterns
         (r"(?i)(?:we will|let's|going to|plan to)[:.]?\s*(.+)", "approved"),
         (r"(?i)(?:consensus|agreement|unanimously)[:.]?\s*(.+)", "approved"),
-
         # Postponement patterns
         (r"(?i)(?:table|postpone|defer|delay)[:.]?\s*(.+)", "deferred"),
     ]
@@ -144,14 +165,16 @@ def extract_decisions_from_text(text: str) -> list[dict[str, Any]]:
             decision_text = _clean_decision_text(match)
 
             if len(decision_text) > 10 and not _is_noise(decision_text):
-                decisions.append({
-                    "decision": decision_text,
-                    "made_by": _extract_decision_maker(text, decision_text),
-                    "rationale": _extract_rationale(text, decision_text),
-                    "impact": _assess_decision_impact(decision_text),
-                    "status": status,
-                    "context": _extract_context_around_text(text, decision_text)
-                })
+                decisions.append(
+                    {
+                        "decision": decision_text,
+                        "made_by": _extract_decision_maker(text, decision_text),
+                        "rationale": _extract_rationale(text, decision_text),
+                        "impact": _assess_decision_impact(decision_text),
+                        "status": status,
+                        "context": _extract_context_around_text(text, decision_text),
+                    }
+                )
 
     return _deduplicate_decisions(decisions)
 
@@ -168,19 +191,62 @@ def identify_key_topics_from_text(text: str) -> list[str]:
     """
     # Remove common stop words and transcript artifacts
     stop_words = {
-        'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with',
-        'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before',
-        'after', 'above', 'below', 'between', 'among', 'within', 'without',
-        'said', 'says', 'mentioned', 'discussed', 'talked', 'speaking',
-        'think', 'feel', 'know', 'see', 'want', 'need', 'get', 'go', 'come',
-        'yeah', 'yes', 'okay', 'right', 'well', 'so', 'um', 'uh', 'like'
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "up",
+        "about",
+        "into",
+        "through",
+        "during",
+        "before",
+        "after",
+        "above",
+        "below",
+        "between",
+        "among",
+        "within",
+        "without",
+        "said",
+        "says",
+        "mentioned",
+        "discussed",
+        "talked",
+        "speaking",
+        "think",
+        "feel",
+        "know",
+        "see",
+        "want",
+        "need",
+        "get",
+        "go",
+        "come",
+        "yeah",
+        "yes",
+        "okay",
+        "right",
+        "well",
+        "so",
+        "um",
+        "uh",
+        "like",
     }
 
     # Extract meaningful words (2+ characters, not all caps unless acronym)
-    words = re.findall(r'\b[A-Za-z]{2,}\b', text.lower())
+    words = re.findall(r"\b[A-Za-z]{2,}\b", text.lower())
     meaningful_words = [
-        word for word in words
-        if word not in stop_words and len(word) > 2
+        word for word in words if word not in stop_words and len(word) > 2
     ]
 
     # Count word frequency
@@ -191,9 +257,9 @@ def identify_key_topics_from_text(text: str) -> list[str]:
 
     # Extract potential topic phrases (2-3 words)
     phrase_patterns = [
-        r'\b([a-z]+ (?:project|initiative|feature|system|process|strategy|plan|budget|timeline|deadline|meeting|review|update|discussion|decision))\b',
-        r'\b((?:project|feature|system|api|database|frontend|backend|mobile|web|security|performance|testing|deployment|infrastructure) [a-z]+)\b',
-        r'\b([A-Z][a-z]+ [A-Z][a-z]+)\b',  # Proper nouns (like "Project Alpha")
+        r"\b([a-z]+ (?:project|initiative|feature|system|process|strategy|plan|budget|timeline|deadline|meeting|review|update|discussion|decision))\b",
+        r"\b((?:project|feature|system|api|database|frontend|backend|mobile|web|security|performance|testing|deployment|infrastructure) [a-z]+)\b",
+        r"\b([A-Z][a-z]+ [A-Z][a-z]+)\b",  # Proper nouns (like "Project Alpha")
     ]
 
     for pattern in phrase_patterns:
@@ -218,7 +284,9 @@ def identify_key_topics_from_text(text: str) -> list[str]:
     return topics[:10]  # Return top 10 topics
 
 
-def generate_executive_summary(text: str, participants: list[str], topics: list[str]) -> str:
+def generate_executive_summary(
+    text: str, participants: list[str], topics: list[str]
+) -> str:
     """
     Generate an executive summary based on transcript analysis.
 
@@ -231,7 +299,9 @@ def generate_executive_summary(text: str, participants: list[str], topics: list[
         Executive summary string
     """
     word_count = len(text.split())
-    estimated_duration = max(5, word_count // 150)  # Rough estimate: 150 words per minute
+    estimated_duration = max(
+        5, word_count // 150
+    )  # Rough estimate: 150 words per minute
 
     participant_count = len(participants)
     topic_summary = ", ".join(topics[:5]) if topics else "general discussion"
@@ -253,15 +323,21 @@ def generate_executive_summary(text: str, participants: list[str], topics: list[
     summary_parts.append(f"involved {participant_count} participants")
 
     if estimated_duration:
-        summary_parts.append(f"and covered {topic_summary} over approximately {estimated_duration} minutes")
+        summary_parts.append(
+            f"and covered {topic_summary} over approximately {estimated_duration} minutes"
+        )
     else:
         summary_parts.append(f"covering {topic_summary}")
 
     key_outcomes = []
     if len(decisions) > 0:
-        key_outcomes.append(f"{len(decisions)} key decision{'s' if len(decisions) != 1 else ''}")
+        key_outcomes.append(
+            f"{len(decisions)} key decision{'s' if len(decisions) != 1 else ''}"
+        )
     if len(action_items) > 0:
-        key_outcomes.append(f"{len(action_items)} action item{'s' if len(action_items) != 1 else ''}")
+        key_outcomes.append(
+            f"{len(action_items)} action item{'s' if len(action_items) != 1 else ''}"
+        )
 
     if key_outcomes:
         summary_parts.append(f"The meeting resulted in {' and '.join(key_outcomes)}")
@@ -271,12 +347,13 @@ def generate_executive_summary(text: str, participants: list[str], topics: list[
 
 # Helper functions
 
+
 def _clean_task_text(task: str) -> str:
     """Clean and normalize task text."""
     # Remove leading/trailing whitespace and common prefixes
     task = task.strip()
-    task = re.sub(r'^(?:that|to|and|but|so|then)\s+', '', task, flags=re.IGNORECASE)
-    task = re.sub(r'\s+', ' ', task)  # Normalize whitespace
+    task = re.sub(r"^(?:that|to|and|but|so|then)\s+", "", task, flags=re.IGNORECASE)
+    task = re.sub(r"\s+", " ", task)  # Normalize whitespace
 
     # Truncate to 450 characters to leave room for model validation (500 char limit)
     if len(task) > 450:
@@ -289,16 +366,20 @@ def _clean_assignee_text(assignee: str) -> str:
     """Clean and normalize assignee text."""
     assignee = assignee.strip()
     # Remove common prefixes and suffixes
-    assignee = re.sub(r'^(?:@|by|to)\s*', '', assignee, flags=re.IGNORECASE)
-    assignee = re.sub(r'\s*[:.,;].*$', '', assignee)  # Remove everything after punctuation
+    assignee = re.sub(r"^(?:@|by|to)\s*", "", assignee, flags=re.IGNORECASE)
+    assignee = re.sub(
+        r"\s*[:.,;].*$", "", assignee
+    )  # Remove everything after punctuation
     return assignee.strip().title() if assignee else "Unassigned"
 
 
 def _clean_decision_text(decision: str) -> str:
     """Clean and normalize decision text."""
     decision = decision.strip()
-    decision = re.sub(r'^(?:that|to|and|but|so|then)\s+', '', decision, flags=re.IGNORECASE)
-    decision = re.sub(r'\s+', ' ', decision)
+    decision = re.sub(
+        r"^(?:that|to|and|but|so|then)\s+", "", decision, flags=re.IGNORECASE
+    )
+    decision = re.sub(r"\s+", " ", decision)
     return decision.strip()
 
 
@@ -306,8 +387,24 @@ def _infer_priority(task: str, default: str = "medium") -> str:
     """Infer task priority based on keywords."""
     task_lower = task.lower()
 
-    high_priority_keywords = ['urgent', 'asap', 'immediately', 'critical', 'must', 'required', 'deadline', 'due']
-    low_priority_keywords = ['consider', 'maybe', 'could', 'might', 'eventually', 'nice to have']
+    high_priority_keywords = [
+        "urgent",
+        "asap",
+        "immediately",
+        "critical",
+        "must",
+        "required",
+        "deadline",
+        "due",
+    ]
+    low_priority_keywords = [
+        "consider",
+        "maybe",
+        "could",
+        "might",
+        "eventually",
+        "nice to have",
+    ]
 
     if any(keyword in task_lower for keyword in high_priority_keywords):
         return "high"
@@ -320,10 +417,10 @@ def _infer_priority(task: str, default: str = "medium") -> str:
 def _is_noise(text: str) -> bool:
     """Determine if text is likely noise/irrelevant."""
     noise_patterns = [
-        r'^(?:um|uh|oh|ah|well|so|like|you know)',
-        r'^(?:yeah|yes|no|okay|right|sure|exactly)',
-        r'^\w{1,2}$',  # Very short words
-        r'^[^\w\s]+$',  # Only punctuation
+        r"^(?:um|uh|oh|ah|well|so|like|you know)",
+        r"^(?:yeah|yes|no|okay|right|sure|exactly)",
+        r"^\w{1,2}$",  # Very short words
+        r"^[^\w\s]+$",  # Only punctuation
     ]
 
     text_lower = text.lower().strip()
@@ -333,9 +430,9 @@ def _is_noise(text: str) -> bool:
 def _extract_due_date(task: str) -> str | None:
     """Extract due date from task text if present."""
     date_patterns = [
-        r'(?:by|due|before)\s+(\w+day)',  # "by Friday"
-        r'(?:by|due|before)\s+(\d{1,2}/\d{1,2})',  # "by 12/25"
-        r'(?:by|due|before)\s+(\w+\s+\d{1,2})',  # "by March 15"
+        r"(?:by|due|before)\s+(\w+day)",  # "by Friday"
+        r"(?:by|due|before)\s+(\d{1,2}/\d{1,2})",  # "by 12/25"
+        r"(?:by|due|before)\s+(\w+\s+\d{1,2})",  # "by March 15"
     ]
 
     for pattern in date_patterns:
@@ -346,7 +443,9 @@ def _extract_due_date(task: str) -> str | None:
     return None
 
 
-def _extract_context_around_text(full_text: str, target_text: str, window: int = 100) -> str:
+def _extract_context_around_text(
+    full_text: str, target_text: str, window: int = 100
+) -> str:
     """Extract context around specific text for better understanding."""
     try:
         index = full_text.lower().find(target_text.lower())
@@ -369,9 +468,9 @@ def _extract_decision_maker(text: str, decision: str) -> str:
 
     # Common patterns for decision makers
     patterns = [
-        r'([A-Z][a-z]+)\s+(?:decided|agreed|approved)',
-        r'(?:decision by|made by)\s+([A-Z][a-z]+)',
-        r'([A-Z][a-z]+):\s*[^.]*(?:decided|agreed)',
+        r"([A-Z][a-z]+)\s+(?:decided|agreed|approved)",
+        r"(?:decision by|made by)\s+([A-Z][a-z]+)",
+        r"([A-Z][a-z]+):\s*[^.]*(?:decided|agreed)",
     ]
 
     for pattern in patterns:
@@ -388,8 +487,8 @@ def _extract_rationale(text: str, decision: str) -> str:
 
     # Look for explanation patterns
     rationale_patterns = [
-        r'(?:because|since|due to|reason)\s+([^.]{10,100})',
-        r'(?:justification|rationale)[:.]?\s*([^.]{10,100})',
+        r"(?:because|since|due to|reason)\s+([^.]{10,100})",
+        r"(?:justification|rationale)[:.]?\s*([^.]{10,100})",
     ]
 
     for pattern in rationale_patterns:
@@ -404,8 +503,17 @@ def _assess_decision_impact(decision: str) -> str:
     """Assess the potential impact of a decision."""
     decision_lower = decision.lower()
 
-    high_impact_keywords = ['budget', 'hire', 'fire', 'launch', 'cancel', 'strategic', 'critical', 'major']
-    low_impact_keywords = ['minor', 'small', 'quick', 'simple', 'temporary']
+    high_impact_keywords = [
+        "budget",
+        "hire",
+        "fire",
+        "launch",
+        "cancel",
+        "strategic",
+        "critical",
+        "major",
+    ]
+    low_impact_keywords = ["minor", "small", "quick", "simple", "temporary"]
 
     if any(keyword in decision_lower for keyword in high_impact_keywords):
         return "high"
@@ -420,11 +528,43 @@ def _infer_meeting_type(text: str) -> str:
     text_lower = text.lower()
 
     meeting_types = {
-        "standup": ["standup", "daily", "scrum", "status update", "what did you work on"],
-        "planning": ["planning", "roadmap", "milestone", "timeline", "sprint planning", "project plan"],
-        "retrospective": ["retrospective", "retro", "what went well", "what could improve", "lessons learned"],
-        "one_on_one": ["1:1", "one on one", "performance", "feedback", "career", "development"],
-        "all_hands": ["all hands", "company update", "quarterly", "town hall", "announcement"],
+        "standup": [
+            "standup",
+            "daily",
+            "scrum",
+            "status update",
+            "what did you work on",
+        ],
+        "planning": [
+            "planning",
+            "roadmap",
+            "milestone",
+            "timeline",
+            "sprint planning",
+            "project plan",
+        ],
+        "retrospective": [
+            "retrospective",
+            "retro",
+            "what went well",
+            "what could improve",
+            "lessons learned",
+        ],
+        "one_on_one": [
+            "1:1",
+            "one on one",
+            "performance",
+            "feedback",
+            "career",
+            "development",
+        ],
+        "all_hands": [
+            "all hands",
+            "company update",
+            "quarterly",
+            "town hall",
+            "announcement",
+        ],
         "client_call": ["client", "customer", "stakeholder", "demo", "presentation"],
         "interview": ["interview", "candidate", "hiring", "recruiting"],
     }
@@ -445,7 +585,7 @@ def _deduplicate_action_items(items: list[dict]) -> list[dict]:
     seen_tasks = set()
 
     for item in items:
-        task_normalized = re.sub(r'\s+', ' ', item['task'].lower().strip())
+        task_normalized = re.sub(r"\s+", " ", item["task"].lower().strip())
         # Simple deduplication based on normalized task text
         if task_normalized not in seen_tasks:
             seen_tasks.add(task_normalized)
@@ -463,7 +603,7 @@ def _deduplicate_decisions(decisions: list[dict]) -> list[dict]:
     seen_decisions = set()
 
     for decision in decisions:
-        decision_normalized = re.sub(r'\s+', ' ', decision['decision'].lower().strip())
+        decision_normalized = re.sub(r"\s+", " ", decision["decision"].lower().strip())
         if decision_normalized not in seen_decisions:
             seen_decisions.add(decision_normalized)
             unique_decisions.append(decision)

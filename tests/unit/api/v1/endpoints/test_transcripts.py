@@ -25,7 +25,7 @@ def valid_transcript_data():
         "participants": ["John Smith", "Alice Johnson"],
         "duration_minutes": 30,
         "meeting_type": "standup",
-        "metadata": {"platform": "zoom", "recording_id": "rec_456"}
+        "metadata": {"platform": "zoom", "recording_id": "rec_456"},
     }
 
 
@@ -39,7 +39,9 @@ def audio_file():
 class TestTranscriptUploadEndpoint:
     """Test transcript upload endpoint functionality."""
 
-    def test_should_upload_text_transcript_successfully(self, client, valid_transcript_data):
+    def test_should_upload_text_transcript_successfully(
+        self, client, valid_transcript_data
+    ):
         """Test successful text transcript upload."""
         # response = client.post("/api/v1/transcripts/upload", json=valid_transcript_data)
 

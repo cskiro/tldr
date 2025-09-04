@@ -10,7 +10,9 @@ class SummarizationServiceBase(ABC):
     """Abstract base class for transcript summarization services."""
 
     @abstractmethod
-    async def summarize_transcript(self, meeting_id: str, transcript_text: str) -> MeetingSummary:
+    async def summarize_transcript(
+        self, meeting_id: str, transcript_text: str
+    ) -> MeetingSummary:
         """
         Generate a comprehensive summary from meeting transcript text.
 

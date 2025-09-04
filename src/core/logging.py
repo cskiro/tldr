@@ -10,7 +10,7 @@ from typing import Any
 from pythonjsonlogger import jsonlogger
 
 # Context variable to store request ID across async operations
-request_id_context: ContextVar[str | None] = ContextVar('request_id', default=None)
+request_id_context: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 
 class RequestIdFilter(logging.Filter):
@@ -25,30 +25,35 @@ class RequestIdFilter(logging.Filter):
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """Custom JSON formatter with additional fields."""
 
-    def add_fields(self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]) -> None:
+    def add_fields(
+        self,
+        log_record: dict[str, Any],
+        record: logging.LogRecord,
+        message_dict: dict[str, Any],
+    ) -> None:
         """Add custom fields to the log record."""
         super().add_fields(log_record, record, message_dict)
 
         # Add timestamp in ISO format
-        log_record['timestamp'] = datetime.now(UTC).isoformat()
+        log_record["timestamp"] = datetime.now(UTC).isoformat()
 
         # Add application info
-        log_record['application'] = 'tldr'
-        log_record['version'] = '1.0.0'
+        log_record["application"] = "tldr"
+        log_record["version"] = "1.0.0"
 
         # Add level name
-        log_record['level'] = record.levelname
+        log_record["level"] = record.levelname
 
         # Add request ID if available
-        log_record['request_id'] = getattr(record, 'request_id', 'no-request-id')
+        log_record["request_id"] = getattr(record, "request_id", "no-request-id")
 
         # Add module and function info
-        log_record['module'] = record.module
-        log_record['function'] = record.funcName
+        log_record["module"] = record.module
+        log_record["function"] = record.funcName
 
         # Ensure message is always present
-        if 'message' not in log_record:
-            log_record['message'] = record.getMessage()
+        if "message" not in log_record:
+            log_record["message"] = record.getMessage()
 
 
 def setup_logging(log_level: str = "INFO", log_format: str = "json") -> logging.Logger:
@@ -76,13 +81,13 @@ def setup_logging(log_level: str = "INFO", log_format: str = "json") -> logging.
     # Set up formatter based on format preference
     if log_format.lower() == "json":
         formatter = CustomJsonFormatter(
-            fmt='%(timestamp)s %(level)s %(name)s %(message)s'
+            fmt="%(timestamp)s %(level)s %(name)s %(message)s"
         )
     else:
         # Text format for development
         formatter = logging.Formatter(
-            fmt='%(asctime)s - %(name)s - %(levelname)s - %(request_id)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            fmt="%(asctime)s - %(name)s - %(levelname)s - %(request_id)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
     console_handler.setFormatter(formatter)
@@ -151,16 +156,9 @@ class StructuredLogger:
     def __init__(self, name: str):
         self.logger = get_logger(name)
 
-    def _log_with_context(
-        self,
-        level: int,
-        message: str,
-        **kwargs: Any
-    ) -> None:
+    def _log_with_context(self, level: int, message: str, **kwargs: Any) -> None:
         """Log message with additional context."""
-        extra = {
-            "extra_data": kwargs
-        } if kwargs else {}
+        extra = {"extra_data": kwargs} if kwargs else {}
 
         self.logger.log(level, message, extra=extra)
 
@@ -190,7 +188,7 @@ class StructuredLogger:
         path: str,
         status_code: int,
         duration_ms: float,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Log API request with structured data."""
         self.info(
@@ -199,14 +197,11 @@ class StructuredLogger:
             path=path,
             status_code=status_code,
             duration_ms=round(duration_ms, 2),
-            **kwargs
+            **kwargs,
         )
 
     def log_processing_start(
-        self,
-        meeting_id: str,
-        processing_type: str,
-        **kwargs: Any
+        self, meeting_id: str, processing_type: str, **kwargs: Any
     ) -> None:
         """Log processing start."""
         self.info(
@@ -214,7 +209,7 @@ class StructuredLogger:
             event_type="processing_start",
             meeting_id=meeting_id,
             processing_type=processing_type,
-            **kwargs
+            **kwargs,
         )
 
     def log_processing_complete(
@@ -222,7 +217,7 @@ class StructuredLogger:
         meeting_id: str,
         processing_type: str,
         duration_seconds: float,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Log processing completion."""
         self.info(
@@ -231,15 +226,11 @@ class StructuredLogger:
             meeting_id=meeting_id,
             processing_type=processing_type,
             duration_seconds=round(duration_seconds, 2),
-            **kwargs
+            **kwargs,
         )
 
     def log_processing_error(
-        self,
-        meeting_id: str,
-        processing_type: str,
-        error: str,
-        **kwargs: Any
+        self, meeting_id: str, processing_type: str, error: str, **kwargs: Any
     ) -> None:
         """Log processing error."""
         self.error(
@@ -248,7 +239,7 @@ class StructuredLogger:
             meeting_id=meeting_id,
             processing_type=processing_type,
             error=error,
-            **kwargs
+            **kwargs,
         )
 
     def log_external_service_call(
@@ -257,7 +248,7 @@ class StructuredLogger:
         operation: str,
         duration_ms: float,
         success: bool,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Log external service call."""
         level = logging.INFO if success else logging.ERROR
@@ -273,9 +264,9 @@ class StructuredLogger:
                     "operation": operation,
                     "duration_ms": round(duration_ms, 2),
                     "success": success,
-                    **kwargs
+                    **kwargs,
                 }
-            }
+            },
         )
 
 

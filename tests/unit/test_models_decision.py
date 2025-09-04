@@ -116,37 +116,41 @@ class TestDecision:
         past_date = datetime.now(UTC) - timedelta(days=1)
 
         with pytest.raises(ValueError, match="cannot be in the past"):
-            Decision(**{
-                **valid_decision_data,
-                "implementation_date": past_date
-            })
+            Decision(**{**valid_decision_data, "implementation_date": past_date})
 
         with pytest.raises(ValueError, match="cannot be in the past"):
-            Decision(**{
-                **valid_decision_data,
-                "review_date": past_date
-            })
+            Decision(**{**valid_decision_data, "review_date": past_date})
 
     def test_should_accept_future_dates(self, valid_decision_data, future_date):
         """Test that future dates are accepted."""
-        decision = Decision(**{
-            **valid_decision_data,
-            "implementation_date": future_date,
-            "review_date": future_date + timedelta(days=30)
-        })
+        decision = Decision(
+            **{
+                **valid_decision_data,
+                "implementation_date": future_date,
+                "review_date": future_date + timedelta(days=30),
+            }
+        )
 
         assert decision.implementation_date == future_date
         assert decision.review_date == future_date + timedelta(days=30)
 
     def test_should_clean_string_lists(self, valid_decision_data):
         """Test cleaning of string list fields."""
-        decision = Decision(**{
-            **valid_decision_data,
-            "affected_teams": ["  Frontend Team  ", "BACKEND", "frontend team", "QA", "x"],
-            "alternatives_considered": ["Vue.js", "  Angular  ", "vue.js"],
-            "tags": ["tech", "  FRONTEND  ", "tech", "ui"],
-            "dependencies": ["Training", "  SETUP  ", "training"]
-        })
+        decision = Decision(
+            **{
+                **valid_decision_data,
+                "affected_teams": [
+                    "  Frontend Team  ",
+                    "BACKEND",
+                    "frontend team",
+                    "QA",
+                    "x",
+                ],
+                "alternatives_considered": ["Vue.js", "  Angular  ", "vue.js"],
+                "tags": ["tech", "  FRONTEND  ", "tech", "ui"],
+                "dependencies": ["Training", "  SETUP  ", "training"],
+            }
+        )
 
         # Should be cleaned: trimmed, deduplicated, min length 2
         assert decision.affected_teams == ["Frontend Team", "BACKEND", "QA"]
@@ -181,12 +185,13 @@ class TestDecision:
         assert before <= decision.implementation_date <= after
         assert decision.updated_at is not None
 
-    def test_should_preserve_existing_implementation_date(self, valid_decision_data, future_date):
+    def test_should_preserve_existing_implementation_date(
+        self, valid_decision_data, future_date
+    ):
         """Test that existing implementation date is preserved."""
-        decision = Decision(**{
-            **valid_decision_data,
-            "implementation_date": future_date
-        })
+        decision = Decision(
+            **{**valid_decision_data, "implementation_date": future_date}
+        )
 
         decision.mark_implemented()
 
@@ -206,10 +211,7 @@ class TestDecision:
     def test_should_mark_deferred_without_new_date(self, valid_decision_data):
         """Test marking decision as deferred without changing review date."""
         original_review = datetime.now(UTC) + timedelta(days=10)
-        decision = Decision(**{
-            **valid_decision_data,
-            "review_date": original_review
-        })
+        decision = Decision(**{**valid_decision_data, "review_date": original_review})
 
         decision.mark_deferred()
 
@@ -237,10 +239,9 @@ class TestDecision:
         """Test days until implementation calculation."""
         # Future date
         future_date = datetime.now(UTC) + timedelta(days=10)
-        future_impl = Decision(**{
-            **valid_decision_data,
-            "implementation_date": future_date
-        })
+        future_impl = Decision(
+            **{**valid_decision_data, "implementation_date": future_date}
+        )
         assert future_impl.days_until_implementation() == 10
 
         # Past date (negative days)
@@ -267,14 +268,16 @@ class TestDecision:
 
     def test_should_serialize_correctly(self, valid_decision_data, future_date):
         """Test Decision serialization."""
-        decision = Decision(**{
-            **valid_decision_data,
-            "implementation_date": future_date,
-            "affected_teams": ["Team A", "Team B"],
-            "alternatives_considered": ["Option 1", "Option 2"],
-            "tags": ["tech", "frontend"],
-            "confidence_level": 0.8
-        })
+        decision = Decision(
+            **{
+                **valid_decision_data,
+                "implementation_date": future_date,
+                "affected_teams": ["Team A", "Team B"],
+                "alternatives_considered": ["Option 1", "Option 2"],
+                "tags": ["tech", "frontend"],
+                "confidence_level": 0.8,
+            }
+        )
 
         data = decision.model_dump()
 
@@ -299,8 +302,7 @@ class TestDecisionUpdate:
     def test_should_create_partial_update(self):
         """Test creating partial update with only some fields."""
         update = DecisionUpdate(
-            decision="Updated decision text",
-            impact=DecisionImpact.CRITICAL
+            decision="Updated decision text", impact=DecisionImpact.CRITICAL
         )
 
         assert update.decision == "Updated decision text"
@@ -341,7 +343,7 @@ class TestDecisionUpdate:
             status=DecisionStatus.DEFERRED,
             implementation_date=future_date,
             tags=["updated", "test"],
-            confidence_level=0.9
+            confidence_level=0.9,
         )
 
         data = update.model_dump()

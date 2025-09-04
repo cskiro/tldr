@@ -38,12 +38,17 @@ def expected_summary():
     """Expected summary structure for testing."""
     return {
         "summary": "Quarterly review meeting discussing revenue growth and upcoming projects.",
-        "key_topics": ["Quarterly Review", "Revenue Growth", "Customer Retention", "Product Launch"],
+        "key_topics": [
+            "Quarterly Review",
+            "Revenue Growth",
+            "Customer Retention",
+            "Product Launch",
+        ],
         "decisions": [
             {
                 "decision": "Focus on customer retention this quarter",
                 "made_by": "Team consensus",
-                "rationale": "Revenue up 15% but need to maintain growth"
+                "rationale": "Revenue up 15% but need to maintain growth",
             }
         ],
         "action_items": [
@@ -51,13 +56,13 @@ def expected_summary():
                 "task": "Lead customer retention project",
                 "assignee": "Mike",
                 "due_date": "Friday",
-                "priority": "High"
+                "priority": "High",
             },
             {
                 "task": "Coordinate with marketing team",
                 "assignee": "Sarah",
                 "due_date": "This week",
-                "priority": "Medium"
-            }
-        ]
+                "priority": "Medium",
+            },
+        ],
     }

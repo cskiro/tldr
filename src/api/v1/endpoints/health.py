@@ -16,6 +16,7 @@ _startup_time = time.time()
 
 class HealthCheckResponse(BaseModel):
     """Health check response model."""
+
     status: str
     timestamp: str
     version: str
@@ -25,12 +26,14 @@ class HealthCheckResponse(BaseModel):
 
 class ReadinessResponse(BaseModel):
     """Readiness probe response model."""
+
     status: str
     timestamp: str
 
 
 class LivenessResponse(BaseModel):
     """Liveness probe response model."""
+
     status: str
 
 
@@ -96,7 +99,7 @@ async def health_check():
         timestamp=current_time.isoformat(),
         version="1.0.0",
         uptime=round(uptime, 2),
-        checks=checks
+        checks=checks,
     )
 
     if status_code != 200:
@@ -123,18 +126,15 @@ async def readiness_probe():
         is_ready = await is_application_initialized()
 
         if is_ready:
-            return ReadinessResponse(
-                status="ready",
-                timestamp=current_time.isoformat()
-            )
+            return ReadinessResponse(status="ready", timestamp=current_time.isoformat())
         else:
             raise HTTPException(
                 status_code=503,
                 detail={
                     "status": "not_ready",
                     "timestamp": current_time.isoformat(),
-                    "message": "Application is still initializing"
-                }
+                    "message": "Application is still initializing",
+                },
             )
     except Exception as e:
         raise HTTPException(
@@ -142,8 +142,8 @@ async def readiness_probe():
             detail={
                 "status": "not_ready",
                 "timestamp": current_time.isoformat(),
-                "message": f"Readiness check failed: {str(e)}"
-            }
+                "message": f"Readiness check failed: {str(e)}",
+            },
         ) from e
 
 
@@ -174,7 +174,7 @@ async def health_root():
             "endpoints": {
                 "health": "/health - Comprehensive health check",
                 "ready": "/ready - Kubernetes readiness probe",
-                "alive": "/alive - Kubernetes liveness probe"
+                "alive": "/alive - Kubernetes liveness probe",
             }
-        }
+        },
     )

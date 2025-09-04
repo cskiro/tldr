@@ -31,13 +31,13 @@ class TimestampedModel(BaseModelWithConfig):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Timestamp when the record was created",
-        json_schema_extra={"example": "2025-01-15T10:30:00Z"}
+        json_schema_extra={"example": "2025-01-15T10:30:00Z"},
     )
 
     updated_at: datetime | None = Field(
         default=None,
         description="Timestamp when the record was last updated",
-        json_schema_extra={"example": "2025-01-15T14:45:00Z"}
+        json_schema_extra={"example": "2025-01-15T14:45:00Z"},
     )
 
     def mark_updated(self) -> None:
@@ -55,18 +55,14 @@ class APIResponse(BaseModelWithConfig):
 
     @classmethod
     def success_response(
-        cls,
-        data: Any = None,
-        message: str = "Request successful"
+        cls, data: Any = None, message: str = "Request successful"
     ) -> "APIResponse":
         """Create a success response."""
         return cls(success=True, message=message, data=data)
 
     @classmethod
     def error_response(
-        cls,
-        errors: list[str] | str,
-        message: str = "Request failed"
+        cls, errors: list[str] | str, message: str = "Request failed"
     ) -> "APIResponse":
         """Create an error response."""
         error_list = [errors] if isinstance(errors, str) else errors
@@ -84,18 +80,8 @@ class PaginatedResponse(BaseModelWithConfig):
 
     @classmethod
     def create(
-        cls,
-        items: list[Any],
-        total: int,
-        page: int = 1,
-        size: int = 20
+        cls, items: list[Any], total: int, page: int = 1, size: int = 20
     ) -> "PaginatedResponse":
         """Create a paginated response."""
         pages = max(1, (total + size - 1) // size)  # Always at least 1 page
-        return cls(
-            items=items,
-            total=total,
-            page=page,
-            size=size,
-            pages=pages
-        )
+        return cls(items=items, total=total, page=page, size=size, pages=pages)

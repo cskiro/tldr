@@ -27,16 +27,24 @@ router = APIRouter()
 
 class ExportRequest(BaseModel):
     """Request model for summary export."""
+
     meeting_id: str = Field(..., description="Meeting ID to export")
     format: str = Field(..., description="Export format: json, markdown, or pdf")
-    options: dict[str, Any] | None = Field(None, description="Export formatting options")
+    options: dict[str, Any] | None = Field(
+        None, description="Export formatting options"
+    )
 
 
 class BulkExportRequest(BaseModel):
     """Request model for bulk summary export."""
-    meeting_ids: list[str] = Field(..., max_items=100, description="Meeting IDs to export")
+
+    meeting_ids: list[str] = Field(
+        ..., max_items=100, description="Meeting IDs to export"
+    )
     format: str = Field(..., description="Export format: json, markdown, or pdf")
-    options: dict[str, Any] | None = Field(None, description="Export formatting options")
+    options: dict[str, Any] | None = Field(
+        None, description="Export formatting options"
+    )
 
 
 def create_sample_summary(meeting_id: str) -> MeetingSummary:
@@ -48,7 +56,12 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
     return MeetingSummary(
         meeting_id=meeting_id,
         summary="Team discussed quarterly planning and project timelines. Key decisions were made about technology stack and resource allocation.",
-        key_topics=["Quarterly Planning", "Technology Stack", "Resource Allocation", "Timeline Review"],
+        key_topics=[
+            "Quarterly Planning",
+            "Technology Stack",
+            "Resource Allocation",
+            "Timeline Review",
+        ],
         participants=["Alice Johnson", "Bob Smith", "Carol Davis"],
         action_items=[
             ActionItem(
@@ -57,14 +70,14 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
                 status=ActionItemStatus.PENDING,
                 priority=ActionItemPriority.HIGH,
                 due_date=datetime.now(UTC).replace(day=15, hour=17, minute=0, second=0),
-                context="Required for next week's board presentation"
+                context="Required for next week's board presentation",
             ),
             ActionItem(
                 task="Set up development environment for React project",
                 assignee="Bob Smith",
                 status=ActionItemStatus.IN_PROGRESS,
                 priority=ActionItemPriority.MEDIUM,
-                context="Using latest React 18 with TypeScript configuration"
+                context="Using latest React 18 with TypeScript configuration",
             ),
             ActionItem(
                 task="Schedule follow-up meeting with design team",
@@ -72,8 +85,8 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
                 status=ActionItemStatus.COMPLETED,
                 priority=ActionItemPriority.LOW,
                 completed_at=datetime.now(UTC),
-                completion_notes="Meeting scheduled for next Tuesday at 2 PM"
-            )
+                completion_notes="Meeting scheduled for next Tuesday at 2 PM",
+            ),
         ],
         decisions=[
             Decision(
@@ -85,7 +98,7 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
                 confidence_level=0.9,
                 affected_teams=["Frontend", "QA"],
                 alternatives_considered=["Vue.js", "Angular"],
-                tags=["technology", "frontend", "framework"]
+                tags=["technology", "frontend", "framework"],
             ),
             Decision(
                 decision="Increase sprint duration from 2 to 3 weeks",
@@ -95,8 +108,8 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
                 status=DecisionStatus.APPROVED,
                 confidence_level=0.7,
                 affected_teams=["Development", "QA"],
-                tags=["process", "agile", "sprint"]
-            )
+                tags=["process", "agile", "sprint"],
+            ),
         ],
         confidence_score=0.89,
         processing_time_seconds=23.5,
@@ -104,12 +117,14 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
         next_steps=[
             "Review budget proposals by end of week",
             "Start React project setup immediately",
-            "Schedule design team collaboration session"
-        ]
+            "Schedule design team collaboration session",
+        ],
     )
 
 
-def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] = None) -> str:
+def format_summary_as_markdown(
+    summary: MeetingSummary, options: dict[str, Any] = None
+) -> str:
     """
     Format a meeting summary as Markdown.
 
@@ -136,18 +151,22 @@ def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] 
     ]
 
     # Executive Summary
-    md_lines.extend([
-        "## Executive Summary",
-        "",
-        summary.summary,
-        "",
-    ])
+    md_lines.extend(
+        [
+            "## Executive Summary",
+            "",
+            summary.summary,
+            "",
+        ]
+    )
 
     # Key Topics
-    md_lines.extend([
-        "## Key Topics Discussed",
-        "",
-    ])
+    md_lines.extend(
+        [
+            "## Key Topics Discussed",
+            "",
+        ]
+    )
 
     for topic in summary.key_topics:
         md_lines.append(f"- {topic}")
@@ -156,12 +175,14 @@ def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] 
 
     # Decisions Made
     if summary.decisions:
-        md_lines.extend([
-            "## Decisions Made",
-            "",
-            "| Decision | Made By | Rationale | Impact | Status |",
-            "|----------|---------|-----------|---------|---------|",
-        ])
+        md_lines.extend(
+            [
+                "## Decisions Made",
+                "",
+                "| Decision | Made By | Rationale | Impact | Status |",
+                "|----------|---------|-----------|---------|---------|",
+            ]
+        )
 
         for decision in summary.decisions:
             impact = decision.impact.title()
@@ -174,17 +195,21 @@ def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] 
 
     # Action Items
     if summary.action_items:
-        md_lines.extend([
-            "## Action Items",
-            "",
-            "| Task | Assignee | Due Date | Priority | Status | Context |",
-            "|------|----------|----------|----------|---------|---------|",
-        ])
+        md_lines.extend(
+            [
+                "## Action Items",
+                "",
+                "| Task | Assignee | Due Date | Priority | Status | Context |",
+                "|------|----------|----------|----------|---------|---------|",
+            ]
+        )
 
         for item in summary.action_items:
-            due_date = item.due_date.strftime('%Y-%m-%d') if item.due_date else "Not set"
+            due_date = (
+                item.due_date.strftime("%Y-%m-%d") if item.due_date else "Not set"
+            )
             priority = item.priority.title()
-            status = item.status.replace('_', ' ').title()
+            status = item.status.replace("_", " ").title()
             context = item.context or "N/A"
 
             md_lines.append(
@@ -195,10 +220,12 @@ def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] 
 
     # Next Steps
     if summary.next_steps:
-        md_lines.extend([
-            "## Next Steps",
-            "",
-        ])
+        md_lines.extend(
+            [
+                "## Next Steps",
+                "",
+            ]
+        )
 
         for step in summary.next_steps:
             md_lines.append(f"- {step}")
@@ -206,22 +233,26 @@ def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] 
         md_lines.append("")
 
     # Additional Info
-    md_lines.extend([
-        "## Additional Information",
-        "",
-        f"**Completion Rate:** {summary.completion_percentage:.1f}%",
-        f"**Processing Time:** {summary.processing_time_seconds:.1f} seconds",
-        f"**Confidence Score:** {summary.confidence_score:.2f}",
-    ])
+    md_lines.extend(
+        [
+            "## Additional Information",
+            "",
+            f"**Completion Rate:** {summary.completion_percentage:.1f}%",
+            f"**Processing Time:** {summary.processing_time_seconds:.1f} seconds",
+            f"**Confidence Score:** {summary.confidence_score:.2f}",
+        ]
+    )
 
     if include_sentiment and summary.sentiment:
         md_lines.append(f"**Meeting Sentiment:** {summary.sentiment.title()}")
 
     if include_timestamps:
-        md_lines.extend([
-            "",
-            f"*Generated on {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}*",
-        ])
+        md_lines.extend(
+            [
+                "",
+                f"*Generated on {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}*",
+            ]
+        )
 
     return "\n".join(md_lines)
 
@@ -229,8 +260,10 @@ def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] 
 @router.get("/{meeting_id}", response_model=APIResponse)
 async def get_summary(
     meeting_id: str,
-    action_status: str | None = Query(None, description="Filter action items by status"),
-    include_completed: bool = Query(True, description="Include completed action items")
+    action_status: str | None = Query(
+        None, description="Filter action items by status"
+    ),
+    include_completed: bool = Query(True, description="Include completed action items"),
 ):
     """
     Retrieve a completed meeting summary.
@@ -261,9 +294,13 @@ async def get_summary(
                         "meeting_id": meeting_id,
                         "status": processing_status.status,
                         "progress_percentage": processing_status.progress_percentage,
-                        "estimated_completion": processing_status.estimated_completion.isoformat() if processing_status.estimated_completion else None
-                    }
-                ).model_dump()
+                        "estimated_completion": (
+                            processing_status.estimated_completion.isoformat()
+                            if processing_status.estimated_completion
+                            else None
+                        ),
+                    },
+                ).model_dump(),
             )
 
         # If processing failed, return error info
@@ -271,7 +308,7 @@ async def get_summary(
             raise ProcessingError(
                 meeting_id=meeting_id,
                 stage="summary_generation",
-                details=processing_status.error_message or "Processing failed"
+                details=processing_status.error_message or "Processing failed",
             )
 
         # Get the processed summary from storage
@@ -279,7 +316,7 @@ async def get_summary(
             raise ProcessingError(
                 meeting_id=meeting_id,
                 stage="summary_retrieval",
-                details="Summary not found. Ensure meeting has been processed successfully."
+                details="Summary not found. Ensure meeting has been processed successfully.",
             )
 
         summary = summaries_storage[meeting_id]
@@ -306,12 +343,11 @@ async def get_summary(
             f"Summary retrieved successfully: {meeting_id}",
             action_item_count=len(filtered_summary.action_items),
             decision_count=len(filtered_summary.decisions),
-            confidence_score=summary.confidence_score
+            confidence_score=summary.confidence_score,
         )
 
         return APIResponse.success_response(
-            message="Summary retrieved successfully",
-            data=filtered_summary.model_dump()
+            message="Summary retrieved successfully", data=filtered_summary.model_dump()
         )
 
     except (MeetingNotFoundError, ProcessingError) as e:
@@ -321,13 +357,13 @@ async def get_summary(
         api_logger.error(
             f"Unexpected error retrieving summary: {meeting_id}",
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id=meeting_id,
             stage="summary_retrieval",
             details=f"Unexpected error retrieving summary: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e
 
 
@@ -338,7 +374,7 @@ async def list_summaries(
     start_date: str | None = Query(None, description="Start date filter (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="End date filter (YYYY-MM-DD)"),
     sort_by: str = Query("created_at", description="Sort field"),
-    sort_order: str = Query("desc", description="Sort order: asc or desc")
+    sort_order: str = Query("desc", description="Sort order: asc or desc"),
 ):
     """
     List meeting summaries with pagination and filtering.
@@ -364,16 +400,26 @@ async def list_summaries(
         if start_date:
             try:
                 start_dt = datetime.fromisoformat(start_date).replace(tzinfo=UTC)
-                filtered_summaries = [s for s in filtered_summaries if s.created_at >= start_dt]
+                filtered_summaries = [
+                    s for s in filtered_summaries if s.created_at >= start_dt
+                ]
             except ValueError:
-                raise ValidationError({"start_date": "Invalid date format. Use YYYY-MM-DD"}) from None
+                raise ValidationError(
+                    {"start_date": "Invalid date format. Use YYYY-MM-DD"}
+                ) from None
 
         if end_date:
             try:
-                end_dt = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59, tzinfo=UTC)
-                filtered_summaries = [s for s in filtered_summaries if s.created_at <= end_dt]
+                end_dt = datetime.fromisoformat(end_date).replace(
+                    hour=23, minute=59, second=59, tzinfo=UTC
+                )
+                filtered_summaries = [
+                    s for s in filtered_summaries if s.created_at <= end_dt
+                ]
             except ValueError:
-                raise ValidationError({"end_date": "Invalid date format. Use YYYY-MM-DD"}) from None
+                raise ValidationError(
+                    {"end_date": "Invalid date format. Use YYYY-MM-DD"}
+                ) from None
 
         # Sort summaries
         reverse_order = sort_order.lower() == "desc"
@@ -383,7 +429,9 @@ async def list_summaries(
         elif sort_by == "meeting_id":
             filtered_summaries.sort(key=lambda x: x.meeting_id, reverse=reverse_order)
         elif sort_by == "confidence_score":
-            filtered_summaries.sort(key=lambda x: x.confidence_score, reverse=reverse_order)
+            filtered_summaries.sort(
+                key=lambda x: x.confidence_score, reverse=reverse_order
+            )
 
         # Paginate
         total = len(filtered_summaries)
@@ -395,10 +443,7 @@ async def list_summaries(
         summary_items = [summary.model_dump() for summary in page_summaries]
 
         return PaginatedResponse.create(
-            items=summary_items,
-            total=total,
-            page=page,
-            size=size
+            items=summary_items, total=total, page=page, size=size
         )
 
     except ValidationError as e:
@@ -408,13 +453,13 @@ async def list_summaries(
         api_logger.error(
             "Unexpected error listing summaries",
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id="",
             stage="summary_list",
             details=f"Unexpected error listing summaries: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e
 
 
@@ -436,7 +481,9 @@ async def export_summary(request: ExportRequest):
 
         # Validate format
         if export_format not in ["json", "markdown", "pdf"]:
-            raise ValidationError({"format": "Unsupported format. Use: json, markdown, or pdf"})
+            raise ValidationError(
+                {"format": "Unsupported format. Use: json, markdown, or pdf"}
+            )
 
         # Check if meeting/summary exists
         if meeting_id not in meetings_storage:
@@ -457,9 +504,7 @@ async def export_summary(request: ExportRequest):
             return Response(
                 content=content,
                 media_type=media_type,
-                headers={
-                    "Content-Disposition": f'attachment; filename="{filename}"'
-                }
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
             )
 
         elif export_format == "markdown":
@@ -470,9 +515,7 @@ async def export_summary(request: ExportRequest):
             return Response(
                 content=content,
                 media_type=media_type,
-                headers={
-                    "Content-Disposition": f'attachment; filename="{filename}"'
-                }
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
             )
 
         elif export_format == "pdf":
@@ -487,13 +530,13 @@ async def export_summary(request: ExportRequest):
             f"Unexpected error exporting summary: {meeting_id}",
             format=export_format,
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id=meeting_id,
             stage="summary_export",
             details=f"Unexpected error exporting summary: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e
 
 
@@ -509,32 +552,42 @@ async def bulk_export_summaries(request: BulkExportRequest):
     meeting_ids = request.meeting_ids
 
     try:
-        api_logger.info(f"Bulk export requested: {len(meeting_ids)} meetings as {export_format}")
+        api_logger.info(
+            f"Bulk export requested: {len(meeting_ids)} meetings as {export_format}"
+        )
 
         # Validate format
         if export_format not in ["json", "markdown", "pdf"]:
-            raise ValidationError({"format": "Unsupported format. Use: json, markdown, or pdf"})
+            raise ValidationError(
+                {"format": "Unsupported format. Use: json, markdown, or pdf"}
+            )
 
         # Validate meeting count
         if len(meeting_ids) > 100:
-            raise ValidationError({"meeting_ids": "Maximum 100 meetings allowed for bulk export"})
+            raise ValidationError(
+                {"meeting_ids": "Maximum 100 meetings allowed for bulk export"}
+            )
 
         # Create temporary ZIP file
         zip_buffer = BytesIO()
 
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             exported_count = 0
 
             for meeting_id in meeting_ids:
                 try:
                     # Skip if meeting doesn't exist
                     if meeting_id not in meetings_storage:
-                        api_logger.warning(f"Meeting not found in bulk export: {meeting_id}")
+                        api_logger.warning(
+                            f"Meeting not found in bulk export: {meeting_id}"
+                        )
                         continue
 
                     # Get or create summary
                     if meeting_id not in summaries_storage:
-                        summaries_storage[meeting_id] = create_sample_summary(meeting_id)
+                        summaries_storage[meeting_id] = create_sample_summary(
+                            meeting_id
+                        )
 
                     summary = summaries_storage[meeting_id]
 
@@ -547,7 +600,9 @@ async def bulk_export_summaries(request: BulkExportRequest):
                         filename = f"{meeting_id}.md"
                     elif export_format == "pdf":
                         # TODO: Implement PDF export
-                        api_logger.warning(f"PDF export not implemented, skipping: {meeting_id}")
+                        api_logger.warning(
+                            f"PDF export not implemented, skipping: {meeting_id}"
+                        )
                         continue
 
                     # Add to ZIP
@@ -556,8 +611,7 @@ async def bulk_export_summaries(request: BulkExportRequest):
 
                 except Exception as e:
                     api_logger.warning(
-                        f"Failed to export meeting in bulk: {meeting_id}",
-                        error=str(e)
+                        f"Failed to export meeting in bulk: {meeting_id}", error=str(e)
                     )
                     continue
 
@@ -573,9 +627,7 @@ async def bulk_export_summaries(request: BulkExportRequest):
         return Response(
             content=zip_content,
             media_type="application/zip",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"'
-            }
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
 
     except ValidationError as e:
@@ -587,11 +639,11 @@ async def bulk_export_summaries(request: BulkExportRequest):
             meeting_count=len(meeting_ids),
             format=export_format,
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id="bulk",
             stage="bulk_export",
             details=f"Unexpected error in bulk export: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e

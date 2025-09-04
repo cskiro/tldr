@@ -209,12 +209,14 @@ class TestActionItem:
 
     def test_should_serialize_correctly(self, valid_action_item_data, future_date):
         """Test ActionItem serialization."""
-        action_item = ActionItem(**{
-            **valid_action_item_data,
-            "due_date": future_date,
-            "tags": ["budget", "quarterly"],
-            "estimated_hours": 5.5,
-        })
+        action_item = ActionItem(
+            **{
+                **valid_action_item_data,
+                "due_date": future_date,
+                "tags": ["budget", "quarterly"],
+                "estimated_hours": 5.5,
+            }
+        )
 
         data = action_item.model_dump()
 
@@ -247,8 +249,7 @@ class TestActionItemUpdate:
     def test_should_create_partial_update(self):
         """Test creating partial update with only some fields."""
         update = ActionItemUpdate(
-            task="Updated task description",
-            priority=ActionItemPriority.URGENT
+            task="Updated task description", priority=ActionItemPriority.URGENT
         )
 
         assert update.task == "Updated task description"
@@ -288,7 +289,7 @@ class TestActionItemUpdate:
             task="New task",
             priority=ActionItemPriority.HIGH,
             due_date=future_date,
-            tags=["updated", "test"]
+            tags=["updated", "test"],
         )
 
         data = update.model_dump()

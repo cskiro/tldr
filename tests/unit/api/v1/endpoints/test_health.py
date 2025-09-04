@@ -1,6 +1,5 @@
 """Comprehensive tests for health check endpoints."""
 
-
 import pytest
 
 # Import will be available after implementation

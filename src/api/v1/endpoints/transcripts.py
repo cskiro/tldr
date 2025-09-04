@@ -31,8 +31,14 @@ router = APIRouter()
 # Configuration constants
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 SUPPORTED_AUDIO_FORMATS = [
-    "audio/mpeg", "audio/mp3", "audio/wav", "audio/wave",
-    "audio/m4a", "audio/mp4", "audio/ogg", "video/mp4"
+    "audio/mpeg",
+    "audio/mp3",
+    "audio/wav",
+    "audio/wave",
+    "audio/m4a",
+    "audio/mp4",
+    "audio/ogg",
+    "video/mp4",
 ]
 UPLOAD_DIR = "uploads"
 
@@ -45,6 +51,7 @@ summaries_storage: dict[str, Any] = {}  # Store generated summaries
 
 class ProcessingRequest(BaseModel):
     """Request model for transcript processing."""
+
     meeting_id: str
     options: dict[str, Any] | None = None
 
@@ -67,8 +74,7 @@ async def validate_audio_file(file: UploadFile) -> None:
     # Check content type
     if file.content_type not in SUPPORTED_AUDIO_FORMATS:
         raise UnsupportedFormatError(
-            format_type=file.content_type,
-            supported_formats=SUPPORTED_AUDIO_FORMATS
+            format_type=file.content_type, supported_formats=SUPPORTED_AUDIO_FORMATS
         )
 
 
@@ -97,12 +103,14 @@ async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
         file_extension = os.path.splitext(original_filename)[1].lower()
 
         # Whitelist allowed extensions to prevent path injection
-        allowed_extensions = {'.mp3', '.mp4', '.wav', '.m4a', '.ogg'}
+        allowed_extensions = {".mp3", ".mp4", ".wav", ".m4a", ".ogg"}
         if file_extension not in allowed_extensions:
-            file_extension = '.mp3'  # Default to safe extension
+            file_extension = ".mp3"  # Default to safe extension
 
         # Create safe filename using only validated components
-        safe_filename = f"{meeting_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
+        safe_filename = (
+            f"{meeting_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
+        )
 
         # Ensure the filename is safe and normalize the path
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
@@ -114,11 +122,11 @@ async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
                 meeting_id=meeting_id,
                 stage="file_upload",
                 details="Invalid file path detected",
-                original_error=None
+                original_error=None,
             )
 
         # Save file
-        async with aiofiles.open(file_path, 'wb') as f:
+        async with aiofiles.open(file_path, "wb") as f:
             content = await file.read()
             await f.write(content)
 
@@ -126,7 +134,7 @@ async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
             f"File saved successfully: {safe_filename}",
             meeting_id=meeting_id,
             file_path=file_path,
-            file_size=len(content)
+            file_size=len(content),
         )
 
         return file_path
@@ -136,7 +144,7 @@ async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
             meeting_id=meeting_id,
             stage="file_upload",
             details=f"Failed to save uploaded file: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e
 
 
@@ -149,9 +157,8 @@ async def upload_transcript(
     meeting_type: str = Form(..., description="Type of meeting"),
     raw_text: str | None = Form(None, description="Raw transcript text"),
     metadata: str | None = Form(None, description="JSON string of additional metadata"),
-
     # Optional audio file
-    audio_file: UploadFile | None = File(None, description="Audio file to transcribe")
+    audio_file: UploadFile | None = File(None, description="Audio file to transcribe"),
 ):
     """
     Upload a meeting transcript or audio file for processing.
@@ -172,13 +179,16 @@ async def upload_transcript(
 
         # Parse participants (assuming comma-separated string for form data)
         try:
-            if participants.startswith('[') and participants.endswith(']'):
+            if participants.startswith("[") and participants.endswith("]"):
                 # Handle JSON array string
                 import json
+
                 participant_list = json.loads(participants)
             else:
                 # Handle comma-separated string
-                participant_list = [name.strip() for name in participants.split(',') if name.strip()]
+                participant_list = [
+                    name.strip() for name in participants.split(",") if name.strip()
+                ]
         except (json.JSONDecodeError, AttributeError):
             participant_list = [participants] if participants else []
 
@@ -187,9 +197,12 @@ async def upload_transcript(
         if metadata:
             try:
                 import json
+
                 metadata_dict = json.loads(metadata)
             except json.JSONDecodeError:
-                api_logger.warning(f"Invalid metadata JSON for meeting {meeting_id}: {metadata}")
+                api_logger.warning(
+                    f"Invalid metadata JSON for meeting {meeting_id}: {metadata}"
+                )
 
         # Handle audio file if provided
         audio_url = None
@@ -201,7 +214,9 @@ async def upload_transcript(
         # Validate that we have either text or audio
         if not raw_text and not audio_url:
             raise CustomValidationError(
-                field_errors={"content": "Either raw_text or audio_file must be provided"}
+                field_errors={
+                    "content": "Either raw_text or audio_file must be provided"
+                }
             )
 
         # Create transcript input model
@@ -219,7 +234,7 @@ async def upload_transcript(
             "participants": participant_list,
             "duration_minutes": duration_minutes,
             "meeting_type": meeting_type_enum,
-            "metadata": metadata_dict
+            "metadata": metadata_dict,
         }
 
         # Validate with Pydantic model
@@ -238,12 +253,13 @@ async def upload_transcript(
 
         # Create initial processing status
         processing_status = ProcessingStatus(
-            meeting_id=meeting_id,
-            status=TranscriptStatus.UPLOADED
+            meeting_id=meeting_id, status=TranscriptStatus.UPLOADED
         )
 
         # Debug log to check the status type
-        api_logger.info(f"Created processing status with type: {type(processing_status.status)}")
+        api_logger.info(
+            f"Created processing status with type: {type(processing_status.status)}"
+        )
         api_logger.info(f"Processing status value: {processing_status.status}")
         processing_status_storage[meeting_id] = processing_status
 
@@ -253,7 +269,7 @@ async def upload_transcript(
             has_audio=audio_url is not None,
             has_text=raw_text is not None,
             participant_count=len(participant_list),
-            duration_minutes=duration_minutes
+            duration_minutes=duration_minutes,
         )
 
         # Return success response
@@ -266,12 +282,17 @@ async def upload_transcript(
                 "has_text": raw_text is not None,
                 "participants": transcript.participants,
                 "duration_minutes": transcript.duration_minutes,
-                "created_at": processing_status.created_at.isoformat()
-            }
+                "created_at": processing_status.created_at.isoformat(),
+            },
         )
 
-    except (DuplicateMeetingError, FileTooLargeError, UnsupportedFormatError,
-            CustomValidationError, ProcessingError) as e:
+    except (
+        DuplicateMeetingError,
+        FileTooLargeError,
+        UnsupportedFormatError,
+        CustomValidationError,
+        ProcessingError,
+    ) as e:
         # Re-raise known exceptions to be handled by global handler
         raise e
 
@@ -279,18 +300,20 @@ async def upload_transcript(
         api_logger.error(
             f"Unexpected error during upload: {meeting_id}",
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id=meeting_id,
             stage="upload",
             details=f"Unexpected error during upload: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e
 
 
 @router.post("/process", response_model=APIResponse)
-async def process_transcript(request: ProcessingRequest, background_tasks: BackgroundTasks):
+async def process_transcript(
+    request: ProcessingRequest, background_tasks: BackgroundTasks
+):
     """
     Start processing a previously uploaded transcript.
 
@@ -314,8 +337,7 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
         if meeting_id not in processing_status_storage:
             # Create status if it doesn't exist (shouldn't happen in normal flow)
             processing_status = ProcessingStatus(
-                meeting_id=meeting_id,
-                status=TranscriptStatus.UPLOADED
+                meeting_id=meeting_id, status=TranscriptStatus.UPLOADED
             )
             processing_status_storage[meeting_id] = processing_status
         else:
@@ -326,7 +348,7 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
             raise ProcessingError(
                 meeting_id=meeting_id,
                 stage="process_start",
-                details="Meeting is already being processed"
+                details="Meeting is already being processed",
             )
 
         if processing_status.status == TranscriptStatus.COMPLETED:
@@ -336,8 +358,12 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
                     "meeting_id": meeting_id,
                     "status": processing_status.status,
                     "progress_percentage": processing_status.progress_percentage,
-                    "completed_at": processing_status.updated_at.isoformat() if processing_status.updated_at else None
-                }
+                    "completed_at": (
+                        processing_status.updated_at.isoformat()
+                        if processing_status.updated_at
+                        else None
+                    ),
+                },
             )
 
         # Start processing
@@ -364,14 +390,14 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
             meeting_id=meeting_id,
             meetings_storage=meetings_storage,
             processing_status_storage=processing_status_storage,
-            summaries_storage=summaries_storage  # We need to add this storage
+            summaries_storage=summaries_storage,  # We need to add this storage
         )
 
         processing_logger.log_processing_start(
             meeting_id=meeting_id,
             processing_type="transcript_analysis",
             estimated_seconds=estimated_seconds,
-            options=request.options
+            options=request.options,
         )
 
         # Return processing started response
@@ -381,10 +407,18 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
                 "meeting_id": meeting_id,
                 "status": processing_status.status,
                 "progress_percentage": processing_status.progress_percentage,
-                "estimated_completion": processing_status.estimated_completion.isoformat() if processing_status.estimated_completion else None,
+                "estimated_completion": (
+                    processing_status.estimated_completion.isoformat()
+                    if processing_status.estimated_completion
+                    else None
+                ),
                 "processing_options": request.options,
-                "started_at": processing_status.updated_at.isoformat() if processing_status.updated_at else None
-            }
+                "started_at": (
+                    processing_status.updated_at.isoformat()
+                    if processing_status.updated_at
+                    else None
+                ),
+            },
         )
 
     except (MeetingNotFoundError, ProcessingError) as e:
@@ -395,13 +429,13 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
         processing_logger.error(
             f"Unexpected error during processing start: {meeting_id}",
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id=meeting_id,
             stage="process_start",
             details=f"Unexpected error starting processing: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e
 
 
@@ -424,8 +458,7 @@ async def get_processing_status(meeting_id: str):
         if meeting_id not in processing_status_storage:
             # Create default status if missing
             processing_status = ProcessingStatus(
-                meeting_id=meeting_id,
-                status=TranscriptStatus.UPLOADED
+                meeting_id=meeting_id, status=TranscriptStatus.UPLOADED
             )
             processing_status_storage[meeting_id] = processing_status
         else:
@@ -437,19 +470,24 @@ async def get_processing_status(meeting_id: str):
             "status": processing_status.status,
             "progress_percentage": processing_status.progress_percentage,
             "created_at": processing_status.created_at.isoformat(),
-            "updated_at": processing_status.updated_at.isoformat() if processing_status.updated_at else None,
+            "updated_at": (
+                processing_status.updated_at.isoformat()
+                if processing_status.updated_at
+                else None
+            ),
         }
 
         # Add optional fields based on status
         if processing_status.estimated_completion:
-            status_data["estimated_completion"] = processing_status.estimated_completion.isoformat()
+            status_data["estimated_completion"] = (
+                processing_status.estimated_completion.isoformat()
+            )
 
         if processing_status.error_message:
             status_data["error_message"] = processing_status.error_message
 
         return APIResponse.success_response(
-            message="Status retrieved successfully",
-            data=status_data
+            message="Status retrieved successfully", data=status_data
         )
 
     except MeetingNotFoundError as e:
@@ -459,11 +497,11 @@ async def get_processing_status(meeting_id: str):
         api_logger.error(
             f"Unexpected error getting status: {meeting_id}",
             error=str(e),
-            error_type=type(e).__name__
+            error_type=type(e).__name__,
         )
         raise ProcessingError(
             meeting_id=meeting_id,
             stage="status_check",
             details=f"Unexpected error checking status: {str(e)}",
-            original_error=e
+            original_error=e,
         ) from e

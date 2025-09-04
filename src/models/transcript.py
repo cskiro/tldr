@@ -14,6 +14,7 @@ from .decision import Decision
 
 class TranscriptStatus(str, Enum):
     """Status of transcript processing."""
+
     UPLOADED = "uploaded"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -22,6 +23,7 @@ class TranscriptStatus(str, Enum):
 
 class MeetingType(str, Enum):
     """Type of meeting."""
+
     STANDUP = "standup"
     PLANNING = "planning"
     RETROSPECTIVE = "retrospective"
@@ -35,58 +37,74 @@ class MeetingType(str, Enum):
 class TranscriptInput(BaseModelWithConfig):
     """Input model for meeting transcript data."""
 
-    meeting_id: Annotated[str, Field(
-        min_length=1,
-        max_length=100,
-        pattern=r"^[a-zA-Z0-9_-]+$",
-        description="Unique identifier for the meeting",
-        json_schema_extra={"example": "standup_2025_01_15_team_alpha"}
-    )]
+    meeting_id: Annotated[
+        str,
+        Field(
+            min_length=1,
+            max_length=100,
+            pattern=r"^[a-zA-Z0-9_-]+$",
+            description="Unique identifier for the meeting",
+            json_schema_extra={"example": "standup_2025_01_15_team_alpha"},
+        ),
+    ]
 
-    raw_text: Annotated[str | None, Field(
-        None,
-        min_length=10,
-        max_length=100000,
-        description="Raw transcript text content",
-        json_schema_extra={"example": "John: Good morning everyone. Let's start..."}
-    )]
+    raw_text: Annotated[
+        str | None,
+        Field(
+            None,
+            min_length=10,
+            max_length=100000,
+            description="Raw transcript text content",
+            json_schema_extra={
+                "example": "John: Good morning everyone. Let's start..."
+            },
+        ),
+    ]
 
-    audio_url: Annotated[str | None, Field(
-        None,
-        pattern=r"^https?://.*\.(mp3|mp4|wav|m4a)$",
-        description="URL to audio/video file for transcription",
-        json_schema_extra={"example": "https://example.com/meeting.mp3"}
-    )]
+    audio_url: Annotated[
+        str | None,
+        Field(
+            None,
+            pattern=r"^https?://.*\.(mp3|mp4|wav|m4a)$",
+            description="URL to audio/video file for transcription",
+            json_schema_extra={"example": "https://example.com/meeting.mp3"},
+        ),
+    ]
 
-    participants: Annotated[list[str], Field(
-        min_length=1,
-        max_length=50,
-        description="List of meeting participants",
-        json_schema_extra={"example": ["Alice Smith", "Bob Johnson", "Carol Lee"]}
-    )]
+    participants: Annotated[
+        list[str],
+        Field(
+            min_length=1,
+            max_length=50,
+            description="List of meeting participants",
+            json_schema_extra={"example": ["Alice Smith", "Bob Johnson", "Carol Lee"]},
+        ),
+    ]
 
-    duration_minutes: Annotated[int, Field(
-        gt=0,
-        le=480,  # Max 8 hours
-        description="Meeting duration in minutes",
-        json_schema_extra={"example": 60}
-    )]
+    duration_minutes: Annotated[
+        int,
+        Field(
+            gt=0,
+            le=480,  # Max 8 hours
+            description="Meeting duration in minutes",
+            json_schema_extra={"example": 60},
+        ),
+    ]
 
     meeting_date: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Date and time when the meeting occurred",
-        json_schema_extra={"example": "2025-01-15T10:00:00Z"}
+        json_schema_extra={"example": "2025-01-15T10:00:00Z"},
     )
 
     meeting_type: MeetingType = Field(
-        default=MeetingType.OTHER,
-        description="Type/category of the meeting"
+        default=MeetingType.OTHER, description="Type/category of the meeting"
     )
 
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional metadata about the meeting",
-        json_schema_extra={"example": {"platform": "zoom", "recording_id": "123456"}}
+        json_schema_extra={"example": {"platform": "zoom", "recording_id": "123456"}},
     )
 
     @field_validator("participants")
@@ -115,8 +133,12 @@ class TranscriptInput(BaseModelWithConfig):
     def validate_content_source(cls, v: str | None, info) -> str | None:
         """Ensure at least one content source is provided."""
         # Only validate when both fields are processed
-        if (hasattr(info, 'data') and 'audio_url' in info.data and
-            v is None and info.data.get("audio_url") is None):
+        if (
+            hasattr(info, "data")
+            and "audio_url" in info.data
+            and v is None
+            and info.data.get("audio_url") is None
+        ):
             raise ValueError("Either raw_text or audio_url must be provided")
         return v
 
@@ -125,67 +147,81 @@ class MeetingSummary(TimestampedModel):
     """Complete meeting summary with extracted information."""
 
     id: UUID = Field(
-        default_factory=uuid4,
-        description="Unique identifier for the summary"
+        default_factory=uuid4, description="Unique identifier for the summary"
     )
 
-    meeting_id: str = Field(
-        description="Reference to the original meeting"
-    )
+    meeting_id: str = Field(description="Reference to the original meeting")
 
-    summary: Annotated[str, Field(
-        min_length=10,
-        max_length=5000,
-        description="Executive summary of the meeting",
-        json_schema_extra={"example": "Team discussed Q1 objectives and project timelines..."}
-    )]
+    summary: Annotated[
+        str,
+        Field(
+            min_length=10,
+            max_length=5000,
+            description="Executive summary of the meeting",
+            json_schema_extra={
+                "example": "Team discussed Q1 objectives and project timelines..."
+            },
+        ),
+    ]
 
-    key_topics: Annotated[list[str], Field(
-        min_length=1,
-        max_length=20,
-        description="Main topics discussed in the meeting",
-        json_schema_extra={"example": ["Q1 Planning", "Budget Review", "Team Capacity"]}
-    )]
+    key_topics: Annotated[
+        list[str],
+        Field(
+            min_length=1,
+            max_length=20,
+            description="Main topics discussed in the meeting",
+            json_schema_extra={
+                "example": ["Q1 Planning", "Budget Review", "Team Capacity"]
+            },
+        ),
+    ]
 
     decisions: list[Decision] = Field(
-        default_factory=list,
-        description="Decisions made during the meeting"
+        default_factory=list, description="Decisions made during the meeting"
     )
 
     action_items: list[ActionItem] = Field(
-        default_factory=list,
-        description="Action items extracted from the meeting"
+        default_factory=list, description="Action items extracted from the meeting"
     )
 
-    participants: list[str] = Field(
-        description="Meeting participants"
-    )
+    participants: list[str] = Field(description="Meeting participants")
 
-    sentiment: Annotated[str, Field(
-        pattern=r"^(positive|neutral|negative)$",
-        description="Overall sentiment of the meeting",
-        json_schema_extra={"example": "positive"}
-    )] = "neutral"
+    sentiment: Annotated[
+        str,
+        Field(
+            pattern=r"^(positive|neutral|negative)$",
+            description="Overall sentiment of the meeting",
+            json_schema_extra={"example": "positive"},
+        ),
+    ] = "neutral"
 
     next_steps: list[str] = Field(
         default_factory=list,
         max_length=10,
         description="Identified next steps and follow-ups",
-        json_schema_extra={"example": ["Schedule follow-up meeting", "Review budget proposal"]}
+        json_schema_extra={
+            "example": ["Schedule follow-up meeting", "Review budget proposal"]
+        },
     )
 
-    confidence_score: Annotated[float, Field(
-        ge=0.0,
-        le=1.0,
-        description="AI confidence score for the summary quality",
-        json_schema_extra={"example": 0.85}
-    )] = 0.0
+    confidence_score: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description="AI confidence score for the summary quality",
+            json_schema_extra={"example": 0.85},
+        ),
+    ] = 0.0
 
-    processing_time_seconds: Annotated[float, Field(
-        ge=0.0,
-        description="Time taken to process the transcript",
-        json_schema_extra={"example": 12.5}
-    )] = 0.0
+    processing_time_seconds: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            description="Time taken to process the transcript",
+            json_schema_extra={"example": 12.5},
+        ),
+    ] = 0.0
 
     @computed_field
     @property
@@ -210,8 +246,12 @@ class ProcessingStatus(TimestampedModel):
     meeting_id: str = Field(description="Meeting identifier")
     status: TranscriptStatus = Field(description="Current processing status")
     progress_percentage: Annotated[int, Field(ge=0, le=100)] = 0
-    error_message: str | None = Field(default=None, description="Error message if processing failed")
-    estimated_completion: datetime | None = Field(default=None, description="Estimated completion time")
+    error_message: str | None = Field(
+        default=None, description="Error message if processing failed"
+    )
+    estimated_completion: datetime | None = Field(
+        default=None, description="Estimated completion time"
+    )
 
     def mark_processing(self, estimated_seconds: int = 60) -> None:
         """Mark as processing with estimated completion time."""

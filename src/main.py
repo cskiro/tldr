@@ -61,7 +61,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add middleware in the correct order (LIFO - Last In, First Out)
@@ -72,15 +72,19 @@ app.add_middleware(SecurityHeadersMiddleware)
 # 2. Custom CORS middleware (replaces FastAPI's built-in)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=getattr(settings, 'allowed_origins', ["*"]),
+    allow_origins=getattr(settings, "allowed_origins", ["*"]),
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=[
-        "Authorization", "Content-Type", "X-Request-ID",
-        "Accept", "Origin", "User-Agent"
+        "Authorization",
+        "Content-Type",
+        "X-Request-ID",
+        "Accept",
+        "Origin",
+        "User-Agent",
     ],
     expose_headers=["X-Request-ID"],
     allow_credentials=False,
-    max_age=600
+    max_age=600,
 )
 
 # 3. Request logging (applied first, closest to request)
@@ -105,18 +109,15 @@ async def root():
         "message": "TLDR - AI Meeting Summarization Tool",
         "version": "1.0.0",
         "status": "operational",
-        "documentation": {
-            "swagger_ui": "/docs",
-            "redoc": "/redoc"
-        },
+        "documentation": {"swagger_ui": "/docs", "redoc": "/redoc"},
         "api": {
             "base_url": "/api/v1",
             "health_check": "/api/v1/health",
             "endpoints": {
                 "transcripts": "/api/v1/transcripts",
-                "summaries": "/api/v1/summaries"
-            }
-        }
+                "summaries": "/api/v1/summaries",
+            },
+        },
     }
 
 
@@ -126,7 +127,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "tldr-api",
-        "message": "Use /api/v1/health for detailed health information"
+        "message": "Use /api/v1/health for detailed health information",
     }
 
 
@@ -140,5 +141,5 @@ if __name__ == "__main__":
         port=8000,
         reload=True,
         log_level="info",
-        reload_dirs=["src"]
+        reload_dirs=["src"],
     )

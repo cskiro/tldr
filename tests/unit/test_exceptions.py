@@ -1,6 +1,5 @@
 """Comprehensive tests for custom exceptions and error handling."""
 
-
 import pytest
 
 # Imports will be available after implementation

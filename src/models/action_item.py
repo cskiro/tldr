@@ -12,6 +12,7 @@ from .base import BaseModelWithConfig, TimestampedModel
 
 class ActionItemStatus(str, Enum):
     """Status of an action item."""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -21,6 +22,7 @@ class ActionItemStatus(str, Enum):
 
 class ActionItemPriority(str, Enum):
     """Priority level of an action item."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -31,70 +33,84 @@ class ActionItem(TimestampedModel):
     """Action item extracted from meeting transcripts."""
 
     id: UUID = Field(
-        default_factory=uuid4,
-        description="Unique identifier for the action item"
+        default_factory=uuid4, description="Unique identifier for the action item"
     )
 
-    task: Annotated[str, Field(
-        min_length=5,
-        max_length=500,
-        description="Description of the task to be completed",
-        json_schema_extra={"example": "Prepare quarterly budget review presentation"}
-    )]
+    task: Annotated[
+        str,
+        Field(
+            min_length=5,
+            max_length=500,
+            description="Description of the task to be completed",
+            json_schema_extra={
+                "example": "Prepare quarterly budget review presentation"
+            },
+        ),
+    ]
 
-    assignee: Annotated[str, Field(
-        min_length=1,
-        max_length=100,
-        description="Person assigned to complete the task",
-        json_schema_extra={"example": "Alice Johnson"}
-    )]
+    assignee: Annotated[
+        str,
+        Field(
+            min_length=1,
+            max_length=100,
+            description="Person assigned to complete the task",
+            json_schema_extra={"example": "Alice Johnson"},
+        ),
+    ]
 
     due_date: datetime | None = Field(
         default=None,
         description="When the task should be completed",
-        json_schema_extra={"example": "2025-01-20T17:00:00Z"}
+        json_schema_extra={"example": "2025-01-20T17:00:00Z"},
     )
 
     priority: ActionItemPriority = Field(
         default=ActionItemPriority.MEDIUM,
-        description="Priority level of the action item"
+        description="Priority level of the action item",
     )
 
     status: ActionItemStatus = Field(
         default=ActionItemStatus.PENDING,
-        description="Current status of the action item"
+        description="Current status of the action item",
     )
 
-    context: Annotated[str, Field(
-        max_length=1000,
-        description="Additional context or background for the task",
-        json_schema_extra={"example": "Discussed during budget planning session. Include Q4 actuals vs forecast."}
-    )] = ""
+    context: Annotated[
+        str,
+        Field(
+            max_length=1000,
+            description="Additional context or background for the task",
+            json_schema_extra={
+                "example": "Discussed during budget planning session. Include Q4 actuals vs forecast."
+            },
+        ),
+    ] = ""
 
     tags: list[str] = Field(
         default_factory=list,
         max_length=10,
         description="Tags for categorizing the action item",
-        json_schema_extra={"example": ["budget", "quarterly", "finance"]}
+        json_schema_extra={"example": ["budget", "quarterly", "finance"]},
     )
 
-    estimated_hours: Annotated[float | None, Field(
-        None,
-        ge=0.1,
-        le=200.0,  # Max ~5 weeks
-        description="Estimated hours to complete the task",
-        json_schema_extra={"example": 4.5}
-    )] = None
+    estimated_hours: Annotated[
+        float | None,
+        Field(
+            None,
+            ge=0.1,
+            le=200.0,  # Max ~5 weeks
+            description="Estimated hours to complete the task",
+            json_schema_extra={"example": 4.5},
+        ),
+    ] = None
 
     completed_at: datetime | None = Field(
-        default=None,
-        description="Timestamp when the task was completed"
+        default=None, description="Timestamp when the task was completed"
     )
 
     completion_notes: str = Field(
         default="",
         max_length=1000,
-        description="Notes added when marking the task as complete"
+        description="Notes added when marking the task as complete",
     )
 
     @field_validator("assignee")
@@ -107,6 +123,7 @@ class ActionItem(TimestampedModel):
 
         # Basic name validation - no special characters except spaces, hyphens, apostrophes
         import re
+
         if not re.match(r"^[a-zA-Z\s\-'\.]+$", v):
             raise ValueError("Assignee name contains invalid characters")
 
@@ -166,19 +183,17 @@ class ActionItem(TimestampedModel):
 class ActionItemUpdate(BaseModelWithConfig):
     """Model for updating action item fields."""
 
-    task: Annotated[str | None, Field(
-        None,
-        min_length=5,
-        max_length=500,
-        description="Updated task description"
-    )] = None
+    task: Annotated[
+        str | None,
+        Field(
+            None, min_length=5, max_length=500, description="Updated task description"
+        ),
+    ] = None
 
-    assignee: Annotated[str | None, Field(
-        None,
-        min_length=1,
-        max_length=100,
-        description="Updated assignee"
-    )] = None
+    assignee: Annotated[
+        str | None,
+        Field(None, min_length=1, max_length=100, description="Updated assignee"),
+    ] = None
 
     due_date: datetime | None = None
     priority: ActionItemPriority | None = None

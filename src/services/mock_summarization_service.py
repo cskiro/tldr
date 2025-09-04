@@ -38,7 +38,9 @@ class MockSummarizationService(SummarizationServiceBase):
         self.processing_start_time = None
         service_logger.info("MockSummarizationService initialized")
 
-    async def summarize_transcript(self, meeting_id: str, transcript_text: str) -> MeetingSummary:
+    async def summarize_transcript(
+        self, meeting_id: str, transcript_text: str
+    ) -> MeetingSummary:
         """
         Generate a comprehensive meeting summary using rule-based analysis.
 
@@ -58,14 +60,14 @@ class MockSummarizationService(SummarizationServiceBase):
         processing_logger.log_processing_start(
             meeting_id=meeting_id,
             processing_type="mock_summarization",
-            text_length=len(transcript_text)
+            text_length=len(transcript_text),
         )
 
         try:
             service_logger.info(
                 f"Starting mock summarization for meeting {meeting_id}",
                 text_length=len(transcript_text),
-                word_count=len(transcript_text.split())
+                word_count=len(transcript_text.split()),
             )
 
             # Extract all components in parallel
@@ -73,7 +75,9 @@ class MockSummarizationService(SummarizationServiceBase):
             key_topics = await self.identify_key_topics(transcript_text)
 
             # Generate executive summary
-            summary_text = generate_executive_summary(transcript_text, participants, key_topics)
+            summary_text = generate_executive_summary(
+                transcript_text, participants, key_topics
+            )
 
             # Extract structured data
             action_items_data = await self.extract_action_items(transcript_text)
@@ -88,7 +92,7 @@ class MockSummarizationService(SummarizationServiceBase):
                     due_date=self._parse_due_date(item.get("due_date")),
                     priority=ActionItemPriority(item["priority"]),
                     status=ActionItemStatus(item["status"]),
-                    context=item.get("context", "")
+                    context=item.get("context", ""),
                 )
                 for item in action_items_data
             ]
@@ -101,7 +105,7 @@ class MockSummarizationService(SummarizationServiceBase):
                     rationale=decision["rationale"],
                     impact=DecisionImpact(decision["impact"]),
                     status=DecisionStatus(decision["status"]),
-                    context=decision.get("context", "")
+                    context=decision.get("context", ""),
                 )
                 for decision in decisions_data
             ]
@@ -131,7 +135,7 @@ class MockSummarizationService(SummarizationServiceBase):
                 sentiment=sentiment,
                 next_steps=next_steps,
                 confidence_score=confidence_score,
-                processing_time_seconds=processing_time
+                processing_time_seconds=processing_time,
             )
 
             processing_logger.log_processing_complete(
@@ -142,7 +146,7 @@ class MockSummarizationService(SummarizationServiceBase):
                 action_items_count=len(action_items),
                 decisions_count=len(decisions),
                 topics_count=len(key_topics),
-                confidence_score=confidence_score
+                confidence_score=confidence_score,
             )
 
             service_logger.info(
@@ -151,7 +155,7 @@ class MockSummarizationService(SummarizationServiceBase):
                 participants_count=len(participants),
                 action_items_count=len(action_items),
                 decisions_count=len(decisions),
-                confidence_score=round(confidence_score, 2)
+                confidence_score=round(confidence_score, 2),
             )
 
             return meeting_summary
@@ -163,14 +167,14 @@ class MockSummarizationService(SummarizationServiceBase):
                 meeting_id=meeting_id,
                 processing_type="mock_summarization",
                 error=str(e),
-                duration_seconds=processing_time
+                duration_seconds=processing_time,
             )
 
             service_logger.error(
                 f"Mock summarization failed for meeting {meeting_id}",
                 error=str(e),
                 error_type=type(e).__name__,
-                processing_time_seconds=round(processing_time, 2)
+                processing_time_seconds=round(processing_time, 2),
             )
 
             raise
@@ -229,35 +233,43 @@ class MockSummarizationService(SummarizationServiceBase):
         except Exception:
             return None
 
-    def _generate_next_steps(self, action_items: list[ActionItem], decisions: list[Decision]) -> list[str]:
+    def _generate_next_steps(
+        self, action_items: list[ActionItem], decisions: list[Decision]
+    ) -> list[str]:
         """Generate next steps based on action items and decisions."""
         next_steps = []
 
         # Add high-priority action items as next steps
         high_priority_items = [
-            item for item in action_items
-            if item.priority == ActionItemPriority.HIGH
-        ][:3]  # Limit to top 3
+            item for item in action_items if item.priority == ActionItemPriority.HIGH
+        ][
+            :3
+        ]  # Limit to top 3
 
         for item in high_priority_items:
             next_steps.append(f"{item.assignee}: {item.task}")
 
         # Add approved decisions that require follow-up
         approved_decisions = [
-            decision for decision in decisions
-            if decision.status == DecisionStatus.APPROVED and
-            decision.impact in [DecisionImpact.HIGH, DecisionImpact.MEDIUM]
-        ][:2]  # Limit to top 2
+            decision
+            for decision in decisions
+            if decision.status == DecisionStatus.APPROVED
+            and decision.impact in [DecisionImpact.HIGH, DecisionImpact.MEDIUM]
+        ][
+            :2
+        ]  # Limit to top 2
 
         for decision in approved_decisions:
             next_steps.append(f"Follow up on: {decision.decision}")
 
         # Add generic next steps if we don't have enough specific ones
         if len(next_steps) < 2:
-            next_steps.extend([
-                "Schedule follow-up meeting to review progress",
-                "Distribute meeting notes to all participants"
-            ])
+            next_steps.extend(
+                [
+                    "Schedule follow-up meeting to review progress",
+                    "Distribute meeting notes to all participants",
+                ]
+            )
 
         return next_steps[:5]  # Limit to 5 next steps
 
@@ -266,22 +278,52 @@ class MockSummarizationService(SummarizationServiceBase):
         text_lower = transcript_text.lower()
 
         positive_keywords = [
-            "great", "excellent", "good", "positive", "success", "achieved",
-            "accomplished", "agree", "approved", "happy", "pleased", "excited"
+            "great",
+            "excellent",
+            "good",
+            "positive",
+            "success",
+            "achieved",
+            "accomplished",
+            "agree",
+            "approved",
+            "happy",
+            "pleased",
+            "excited",
         ]
 
         negative_keywords = [
-            "problem", "issue", "concern", "difficult", "challenge", "failed",
-            "rejected", "disappointed", "frustrated", "worried", "delayed"
+            "problem",
+            "issue",
+            "concern",
+            "difficult",
+            "challenge",
+            "failed",
+            "rejected",
+            "disappointed",
+            "frustrated",
+            "worried",
+            "delayed",
         ]
 
         neutral_keywords = [
-            "discussed", "reviewed", "considered", "noted", "mentioned",
-            "presented", "updated", "reported", "planned"
+            "discussed",
+            "reviewed",
+            "considered",
+            "noted",
+            "mentioned",
+            "presented",
+            "updated",
+            "reported",
+            "planned",
         ]
 
-        positive_count = sum(1 for keyword in positive_keywords if keyword in text_lower)
-        negative_count = sum(1 for keyword in negative_keywords if keyword in text_lower)
+        positive_count = sum(
+            1 for keyword in positive_keywords if keyword in text_lower
+        )
+        negative_count = sum(
+            1 for keyword in negative_keywords if keyword in text_lower
+        )
         neutral_count = sum(1 for keyword in neutral_keywords if keyword in text_lower)
 
         total_sentiment_words = positive_count + negative_count + neutral_count
@@ -305,7 +347,7 @@ class MockSummarizationService(SummarizationServiceBase):
         participants: list[str],
         action_items: list[ActionItem],
         decisions: list[Decision],
-        key_topics: list[str]
+        key_topics: list[str],
     ) -> float:
         """
         Calculate confidence score based on extraction quality indicators.
