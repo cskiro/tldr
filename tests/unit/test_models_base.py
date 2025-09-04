@@ -266,7 +266,11 @@ class TestPaginatedResponse:
         # Test validation constraints
         with pytest.raises(ValueError):
             PaginatedResponse(
-                items=[], total=-1, page=1, size=10, pages=1  # Invalid: negative total
+                items=[],
+                total=-1,
+                page=1,
+                size=10,
+                pages=1,  # Invalid: negative total
             )
 
         with pytest.raises(ValueError):
@@ -280,7 +284,11 @@ class TestPaginatedResponse:
 
         with pytest.raises(ValueError):
             PaginatedResponse(
-                items=[], total=10, page=1, size=101, pages=1  # Invalid: size too large
+                items=[],
+                total=10,
+                page=1,
+                size=101,
+                pages=1,  # Invalid: size too large
             )
 
     def test_should_serialize_correctly(self):
