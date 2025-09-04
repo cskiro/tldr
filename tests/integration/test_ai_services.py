@@ -15,7 +15,6 @@ from src.services.summarization_factory import (
     validate_provider_config,
 )
 
-
 # Test transcript samples
 SAMPLE_TRANSCRIPT = """
 Meeting: Product Planning Session
