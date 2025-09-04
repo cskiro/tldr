@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 
@@ -54,7 +55,7 @@ def expected_summary():
             },
             {
                 "task": "Coordinate with marketing team",
-                "assignee": "Sarah", 
+                "assignee": "Sarah",
                 "due_date": "This week",
                 "priority": "Medium"
             }

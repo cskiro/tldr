@@ -1,14 +1,14 @@
 """Comprehensive tests for base models."""
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from typing import Any
 
 from src.models.base import (
-    BaseModelWithConfig,
-    TimestampedModel,
     APIResponse,
+    BaseModelWithConfig,
     PaginatedResponse,
+    TimestampedModel,
 )
 
 
@@ -17,47 +17,47 @@ class TestBaseModelWithConfig:
 
     def test_should_create_model_with_valid_data(self):
         """Test that model creation works with valid data."""
-        
+
         class TestModel(BaseModelWithConfig):
             name: str
             value: int
-        
+
         model = TestModel(name="test", value=42)
         assert model.name == "test"
         assert model.value == 42
 
     def test_should_strip_whitespace_from_strings(self):
         """Test that string fields are automatically stripped."""
-        
+
         class TestModel(BaseModelWithConfig):
             name: str
-        
+
         model = TestModel(name="  test  ")
         assert model.name == "test"
 
     def test_should_forbid_extra_fields(self):
         """Test that extra fields are forbidden."""
-        
+
         class TestModel(BaseModelWithConfig):
             name: str
-        
+
         with pytest.raises(ValueError, match="Extra inputs are not permitted"):
             TestModel(name="test", extra_field="should_fail")
 
     def test_should_validate_on_assignment(self):
         """Test that validation occurs on field assignment."""
-        
+
         class TestModel(BaseModelWithConfig):
             value: int
-        
+
         model = TestModel(value=42)
-        
+
         with pytest.raises(ValueError):
             model.value = "not_an_int"
 
     def test_should_validate_default_values(self):
         """Test that default values are validated."""
-        
+
         with pytest.raises(ValueError):
             class TestModel(BaseModelWithConfig):
                 value: int = "invalid_default"
@@ -68,31 +68,31 @@ class TestTimestampedModel:
 
     def test_should_create_with_automatic_timestamp(self):
         """Test that created_at is automatically set."""
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         model = TimestampedModel()
-        after = datetime.now(timezone.utc)
-        
+        after = datetime.now(UTC)
+
         assert before <= model.created_at <= after
         assert model.updated_at is None
 
     def test_should_accept_custom_created_at(self):
         """Test that custom created_at can be provided."""
-        custom_time = datetime(2025, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        custom_time = datetime(2025, 1, 15, 10, 30, 0, tzinfo=UTC)
         model = TimestampedModel(created_at=custom_time)
-        
+
         assert model.created_at == custom_time
 
     def test_should_mark_updated_correctly(self):
         """Test that mark_updated sets updated_at timestamp."""
         model = TimestampedModel()
         original_created = model.created_at
-        
+
         # Small delay to ensure different timestamps
         import time
         time.sleep(0.01)
-        
+
         model.mark_updated()
-        
+
         assert model.created_at == original_created
         assert model.updated_at is not None
         assert model.updated_at > model.created_at
@@ -102,20 +102,20 @@ class TestTimestampedModel:
         model = TimestampedModel()
         model.mark_updated()
         first_update = model.updated_at
-        
+
         import time
         time.sleep(0.01)
-        
+
         model.mark_updated()
-        
+
         assert model.updated_at > first_update
 
     def test_should_inherit_base_config(self):
         """Test that TimestampedModel inherits base configuration."""
-        
+
         class TestTimestampedModel(TimestampedModel):
             name: str
-        
+
         model = TestTimestampedModel(name="  test  ")
         assert model.name == "test"  # Whitespace stripped
 
@@ -126,7 +126,7 @@ class TestAPIResponse:
     def test_should_create_success_response_with_defaults(self):
         """Test creating success response with default values."""
         response = APIResponse.success_response()
-        
+
         assert response.success is True
         assert response.message == "Request successful"
         assert response.data is None
@@ -136,9 +136,9 @@ class TestAPIResponse:
         """Test creating success response with custom data."""
         data = {"key": "value"}
         message = "Custom success"
-        
+
         response = APIResponse.success_response(data=data, message=message)
-        
+
         assert response.success is True
         assert response.message == message
         assert response.data == data
@@ -147,9 +147,9 @@ class TestAPIResponse:
     def test_should_create_error_response_with_string_error(self):
         """Test creating error response with single error string."""
         error = "Something went wrong"
-        
+
         response = APIResponse.error_response(error)
-        
+
         assert response.success is False
         assert response.message == "Request failed"
         assert response.data is None
@@ -159,9 +159,9 @@ class TestAPIResponse:
         """Test creating error response with list of errors."""
         errors = ["Error 1", "Error 2"]
         message = "Multiple errors occurred"
-        
+
         response = APIResponse.error_response(errors, message=message)
-        
+
         assert response.success is False
         assert response.message == message
         assert response.data is None
@@ -188,16 +188,16 @@ class TestAPIResponse:
             data={"test": "value"},
             message="Success"
         )
-        
+
         response_dict = response.model_dump()
-        
+
         expected = {
             "success": True,
             "message": "Success",
             "data": {"test": "value"},
             "errors": None
         }
-        
+
         assert response_dict == expected
 
 
@@ -208,9 +208,9 @@ class TestPaginatedResponse:
         """Test creating paginated response with default pagination."""
         items = [1, 2, 3]
         total = 50
-        
+
         response = PaginatedResponse.create(items=items, total=total)
-        
+
         assert response.items == items
         assert response.total == total
         assert response.page == 1
@@ -223,14 +223,14 @@ class TestPaginatedResponse:
         total = 100
         page = 2
         size = 10
-        
+
         response = PaginatedResponse.create(
             items=items,
             total=total,
             page=page,
             size=size
         )
-        
+
         assert response.items == items
         assert response.total == total
         assert response.page == page
@@ -244,7 +244,7 @@ class TestPaginatedResponse:
             total=40,
             size=10
         )
-        
+
         assert response.pages == 4
 
     def test_should_calculate_pages_correctly_for_partial_last_page(self):
@@ -254,7 +254,7 @@ class TestPaginatedResponse:
             total=41,
             size=10
         )
-        
+
         assert response.pages == 5
 
     def test_should_handle_zero_total(self):
@@ -264,7 +264,7 @@ class TestPaginatedResponse:
             total=0,
             size=10
         )
-        
+
         assert response.items == []
         assert response.total == 0
         assert response.pages == 1  # Always at least 1 page
@@ -318,9 +318,9 @@ class TestPaginatedResponse:
             page=2,
             size=5
         )
-        
+
         response_dict = response.model_dump()
-        
+
         expected = {
             "items": items,
             "total": 25,
@@ -328,5 +328,5 @@ class TestPaginatedResponse:
             "size": 5,
             "pages": 5
         }
-        
+
         assert response_dict == expected
