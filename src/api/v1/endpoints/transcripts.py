@@ -74,7 +74,7 @@ async def validate_audio_file(file: UploadFile) -> None:
     # Check content type
     if file.content_type not in SUPPORTED_AUDIO_FORMATS:
         raise UnsupportedFormatError(
-            format_type=file.content_type, supported_formats=SUPPORTED_AUDIO_FORMATS
+            format_type=file.content_type or "unknown", supported_formats=SUPPORTED_AUDIO_FORMATS
         )
 
 
@@ -225,7 +225,7 @@ async def upload_transcript(
             meeting_type_enum = MeetingType(meeting_type.lower())
         except ValueError:
             # If invalid meeting type, default to 'general'
-            meeting_type_enum = MeetingType.GENERAL
+            meeting_type_enum = MeetingType.OTHER
 
         transcript_data = {
             "meeting_id": meeting_id,

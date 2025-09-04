@@ -2,6 +2,7 @@
 
 import os
 from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -19,7 +20,7 @@ from src.core.middleware import (
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan events."""
     # Startup
     api_logger.info("Starting TLDR API application")
@@ -103,7 +104,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, Any]:
     """Root endpoint providing API information."""
     return {
         "message": "TLDR - AI Meeting Summarization Tool",
@@ -122,7 +123,7 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Basic health check endpoint (legacy)."""
     return {
         "status": "healthy",

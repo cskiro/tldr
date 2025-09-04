@@ -39,7 +39,7 @@ class BulkExportRequest(BaseModel):
     """Request model for bulk summary export."""
 
     meeting_ids: list[str] = Field(
-        ..., max_items=100, description="Meeting IDs to export"
+        default=..., description="Meeting IDs to export", max_items=100
     )
     format: str = Field(..., description="Export format: json, markdown, or pdf")
     options: dict[str, Any] | None = Field(

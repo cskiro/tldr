@@ -58,7 +58,7 @@ async def is_application_initialized() -> bool:
 
 
 @router.get("/health", response_model=HealthCheckResponse)
-async def health_check():
+async def health_check() -> HealthCheckResponse:
     """
     Comprehensive health check endpoint.
 
@@ -109,7 +109,7 @@ async def health_check():
 
 
 @router.get("/ready", response_model=ReadinessResponse)
-async def readiness_probe():
+async def readiness_probe() -> ReadinessResponse:
     """
     Kubernetes readiness probe endpoint.
 
@@ -148,7 +148,7 @@ async def readiness_probe():
 
 
 @router.get("/alive", response_model=LivenessResponse)
-async def liveness_probe():
+async def liveness_probe() -> LivenessResponse:
     """
     Kubernetes liveness probe endpoint.
 
@@ -162,7 +162,7 @@ async def liveness_probe():
 
 
 @router.get("/")
-async def health_root():
+async def health_root() -> APIResponse:
     """
     Root health endpoint that redirects to main health check.
 
