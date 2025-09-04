@@ -3,7 +3,7 @@
 import json
 import time
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from uuid import uuid4
 
 from pydantic import ValidationError

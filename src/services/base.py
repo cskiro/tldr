@@ -1,7 +1,6 @@
 """Base classes for summarization services."""
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from src.models.transcript import MeetingSummary
 

@@ -1,19 +1,19 @@
 """Integration tests for AI services."""
 
 import asyncio
-import pytest
 import time
 from unittest.mock import patch
 
+import pytest
+
+from src.models.transcript import MeetingSummary
+from src.services.mock_summarization_service import MockSummarizationService
+from src.services.ollama_service import OllamaService
 from src.services.summarization_factory import (
     create_summarization_service,
     get_available_providers,
     validate_provider_config,
 )
-from src.services.ollama_service import OllamaService
-from src.services.mock_summarization_service import MockSummarizationService
-from src.models.transcript import MeetingSummary
-from src.core.config import settings
 
 
 # Test transcript samples
@@ -309,7 +309,7 @@ class TestAIServiceIntegration:
             # Ollama should generally be more detailed
             assert len(results["ollama"].summary) >= len(results["mock"].summary) * 0.5
             
-        print(f"\n📊 Service Comparison Results:")
+        print("\n📊 Service Comparison Results:")
         for service_name, summary in results.items():
             print(f"  {service_name.upper()}:")
             print(f"    - Confidence: {summary.confidence_score:.2f}")
