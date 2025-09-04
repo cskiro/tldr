@@ -10,6 +10,8 @@ from pydantic import Field, computed_field, field_validator
 from .action_item import ActionItem
 from .base import BaseModelWithConfig, TimestampedModel
 from .decision import Decision
+from .risk import Risk
+from .user_story import UserStory
 
 
 class TranscriptStatus(str, Enum):
@@ -182,6 +184,15 @@ class MeetingSummary(TimestampedModel):
 
     action_items: list[ActionItem] = Field(
         default_factory=list, description="Action items extracted from the meeting"
+    )
+
+    risks: list[Risk] = Field(
+        default_factory=list, description="Risks identified during the meeting"
+    )
+
+    user_stories: list[UserStory] = Field(
+        default_factory=list,
+        description="User stories extracted from requirements discussions",
     )
 
     participants: list[str] = Field(description="Meeting participants")

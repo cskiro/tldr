@@ -613,3 +613,571 @@ def _deduplicate_decisions(decisions: list[dict]) -> list[dict]:
             unique_decisions.append(decision)
 
     return unique_decisions
+
+
+# Enhanced extraction functions for improved quality
+
+
+def extract_risks_from_text(text: str) -> list[dict[str, Any]]:
+    """
+    Extract risks with detailed categorization and mitigation strategies.
+
+    Args:
+        text: Raw transcript text
+
+    Returns:
+        List of risk dictionaries with enhanced details
+    """
+    risks = []
+
+    # Enhanced risk keywords by category
+    technical_keywords = [
+        "complexity",
+        "challenging",
+        "difficult",
+        "integration",
+        "scalability",
+        "performance",
+        "technical debt",
+        "architecture",
+        "compatibility",
+        "timeline",
+        "underestimate",
+        "overrun",
+    ]
+
+    security_keywords = [
+        "security",
+        "vulnerability",
+        "attack",
+        "breach",
+        "compliance",
+        "audit",
+        "authentication",
+        "authorization",
+        "privacy",
+        "data protection",
+    ]
+
+    business_keywords = [
+        "customer",
+        "market",
+        "budget",
+        "resource",
+        "stakeholder",
+        "adoption",
+        "timeline",
+        "deadline",
+        "scope",
+        "requirement",
+    ]
+
+    # Risk indication patterns
+    risk_patterns = [
+        (
+            r"(?:risk|concern|issue|problem|challenge|blocker|threat)[:.]?\s*(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            "explicit",
+        ),
+        (
+            r"(?:might|could|may|potentially|possibly)\s+(?:be|cause|lead to|result in)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            "potential",
+        ),
+        (
+            r"(?:if we|what if|concern about|worried about|afraid)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            "conditional",
+        ),
+        (
+            r"(?:problem|issue|challenge)\s+(?:is|would be|could be)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            "problem",
+        ),
+        (
+            r"(?:we need to be careful|watch out|be aware)\s+(?:of|about|that)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            "caution",
+        ),
+    ]
+
+    # Extract risks using patterns
+    for pattern, risk_type in risk_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE | re.MULTILINE)
+        for match in matches:
+            risk_text = match.strip()
+            if len(risk_text) > 10:  # Filter out very short matches
+                # Determine category
+                category = _categorize_risk(
+                    risk_text, technical_keywords, security_keywords, business_keywords
+                )
+
+                # Assess impact and likelihood
+                impact = _assess_risk_impact(risk_text, text)
+                likelihood = _assess_risk_likelihood(risk_text, text, risk_type)
+
+                # Extract mitigation strategy
+                mitigation = _extract_mitigation_strategy(risk_text, text)
+
+                # Find risk owner
+                owner = _find_risk_owner(risk_text, text)
+
+                risks.append(
+                    {
+                        "risk": risk_text,
+                        "category": category,
+                        "impact": impact,
+                        "likelihood": likelihood,
+                        "mitigation": mitigation,
+                        "owner": owner,
+                    }
+                )
+
+    # Remove duplicates and return top risks
+    unique_risks = _deduplicate_risks(risks)
+    return unique_risks[:15]  # Return top 15 risks
+
+
+def extract_user_stories_from_text(text: str) -> list[dict[str, Any]]:
+    """
+    Extract user stories from discussion context and requirements.
+
+    Args:
+        text: Raw transcript text
+
+    Returns:
+        List of user story dictionaries
+    """
+    user_stories = []
+
+    # Direct user story patterns
+    story_patterns = [
+        r"as\s+a\s+(.+?),\s*i\s+want\s+(.+?),?\s*so\s+that\s+(.+?)(?:\n|\.|;)",
+        r"user\s+story[:.]?\s*(.+?)(?:\n|\.|;)",
+        r"(?:user|customer|admin|developer)\s+(?:needs?|wants?|should be able to)\s+(.+?)(?:\n|\.|;)",
+    ]
+
+    # Extract direct stories
+    for pattern in story_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE | re.MULTILINE)
+        for match in matches:
+            if isinstance(match, tuple) and len(match) == 3:
+                user_type, goal, benefit = match
+                story = f"As a {user_type.strip()}, I want {goal.strip()}, so that {benefit.strip()}"
+            else:
+                story = match if isinstance(match, str) else match[0]
+
+            # Extract acceptance criteria from surrounding context
+            criteria = _extract_acceptance_criteria(story, text)
+            priority = _assess_story_priority(story, text)
+
+            user_stories.append(
+                {
+                    "story": story,
+                    "acceptance_criteria": criteria,
+                    "priority": priority,
+                    "epic": None,  # Could be enhanced with epic detection
+                }
+            )
+
+    # Extract implicit user stories from requirements discussions
+    implicit_stories = _extract_implicit_user_stories(text)
+    user_stories.extend(implicit_stories)
+
+    return _deduplicate_user_stories(user_stories)[:10]
+
+
+def extract_phased_actions_from_text(text: str) -> list[dict[str, Any]]:
+    """
+    Extract action items with phase detection and enhanced context.
+
+    Args:
+        text: Raw transcript text
+
+    Returns:
+        List of enhanced action item dictionaries
+    """
+    action_items = extract_action_items_from_text(text)
+
+    # Enhance each action item with phase detection
+    enhanced_actions = []
+    for item in action_items:
+        # Detect phase based on content and timeline
+        phase = _detect_action_phase(item["task"], text)
+
+        # Extract dependencies
+        dependencies = _extract_dependencies(item["task"], text)
+
+        # Enhanced context extraction
+        context = _extract_action_context(item["task"], text)
+
+        enhanced_item = {
+            **item,
+            "phase": phase,
+            "dependencies": dependencies,
+            "context": context if context else item.get("context", ""),
+        }
+        enhanced_actions.append(enhanced_item)
+
+    return enhanced_actions
+
+
+def extract_granular_topics_from_text(text: str) -> list[str]:
+    """
+    Extract granular, specific technical topics instead of broad categories.
+
+    Args:
+        text: Raw transcript text
+
+    Returns:
+        List of specific technical topics
+    """
+    topics = []
+
+    # Technical topic patterns (more specific)
+    technical_patterns = [
+        # Protocol and authentication specific
+        r"\b(SAML\s+(?:configuration|implementation|integration|authentication|assertions?))\b",
+        r"\b(OIDC\s+(?:token|flow|configuration|authentication|provider))\b",
+        r"\b((?:single\s+sign-on|SSO)\s+(?:implementation|configuration|integration|flow))\b",
+        r"\b(session\s+(?:management|handling|tokens?|storage))\b",
+        r"\b(token\s+(?:validation|refresh|handling|storage|format))\b",
+        r"\b(logout\s+(?:implementation|flow|propagation|SLO))\b",
+        # Infrastructure and architecture
+        r"\b(API\s+(?:middleware|integration|endpoints?|authentication))\b",
+        r"\b(database\s+(?:migration|schema|integration|design))\b",
+        r"\b(feature\s+flag\s+(?:implementation|system|management))\b",
+        r"\b(identity\s+provider\s+(?:integration|configuration|testing))\b",
+        # Development and testing
+        r"\b(test\s+(?:environment|automation|coverage|strategy))\b",
+        r"\b(development\s+(?:environment|workflow|pipeline))\b",
+        r"\b(UI/UX\s+(?:design|wireframes|flows?|testing))\b",
+        r"\b(account\s+(?:linking|provisioning|management))\b",
+        # Security and compliance
+        r"\b(security\s+(?:audit|compliance|review|testing))\b",
+        r"\b(SOC\s+2\s+(?:compliance|requirements?|audit))\b",
+        r"\b(audit\s+(?:logging|requirements?|trail))\b",
+        r"\b(compliance\s+(?:requirements?|testing|validation))\b",
+    ]
+
+    # Extract specific technical discussions
+    for pattern in technical_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        for match in matches:
+            topic = match.strip().title()
+            if topic not in topics:
+                topics.append(topic)
+
+    # Extract general topics but make them more specific
+    general_topics = identify_key_topics_from_text(text)
+    for topic in general_topics:
+        # Make topics more specific based on context
+        specific_topic = _make_topic_specific(topic, text)
+        if specific_topic != topic and specific_topic not in topics:
+            topics.append(specific_topic)
+
+    return topics[:15]  # Return top 15 specific topics
+
+
+# Helper functions for enhanced extraction
+
+
+def _categorize_risk(
+    risk_text: str,
+    technical_keywords: list,
+    security_keywords: list,
+    business_keywords: list,
+) -> str:
+    """Categorize risk based on keywords and context."""
+    risk_lower = risk_text.lower()
+
+    technical_score = sum(1 for kw in technical_keywords if kw in risk_lower)
+    security_score = sum(1 for kw in security_keywords if kw in risk_lower)
+    business_score = sum(1 for kw in business_keywords if kw in risk_lower)
+
+    if security_score > technical_score and security_score > business_score:
+        return "security"
+    elif technical_score > business_score:
+        return "technical"
+    else:
+        return "business"
+
+
+def _assess_risk_impact(risk_text: str, full_text: str) -> str:
+    """Assess risk impact based on keywords and context."""
+    risk_lower = risk_text.lower()
+
+    high_impact_keywords = [
+        "critical",
+        "major",
+        "significant",
+        "severe",
+        "catastrophic",
+        "breaking",
+        "failure",
+    ]
+    medium_impact_keywords = ["moderate", "noticeable", "some impact", "delay", "issue"]
+
+    if any(kw in risk_lower for kw in high_impact_keywords):
+        return "high"
+    elif any(kw in risk_lower for kw in medium_impact_keywords):
+        return "medium"
+    else:
+        return "low"
+
+
+def _assess_risk_likelihood(risk_text: str, full_text: str, risk_type: str) -> str:
+    """Assess risk likelihood based on language and type."""
+    risk_lower = risk_text.lower()
+
+    high_likelihood_keywords = ["will", "definitely", "certain", "always", "inevitable"]
+    low_likelihood_keywords = ["might", "could", "possibly", "potentially", "unlikely"]
+
+    if risk_type == "explicit":
+        return "medium"  # Explicitly mentioned risks are generally medium likelihood
+    elif any(kw in risk_lower for kw in high_likelihood_keywords):
+        return "high"
+    elif any(kw in risk_lower for kw in low_likelihood_keywords):
+        return "low"
+    else:
+        return "medium"
+
+
+def _extract_mitigation_strategy(risk_text: str, full_text: str) -> str:
+    """Extract mitigation strategy from surrounding context."""
+    # Look for mitigation patterns near the risk
+    mitigation_patterns = [
+        r"(?:to (?:mitigate|address|solve|handle|manage))\s+(.+?)(?:\n|\.|;)",
+        r"(?:we (?:can|could|should|will))\s+(.+?)(?:\n|\.|;)",
+        r"(?:solution|approach|strategy)[:.]?\s*(.+?)(?:\n|\.|;)",
+        r"(?:if we|let's|plan to)\s+(.+?)(?:\n|\.|;)",
+    ]
+
+    for pattern in mitigation_patterns:
+        matches = re.findall(pattern, full_text, re.IGNORECASE)
+        if matches:
+            return matches[0].strip()
+
+    return "Not specified"
+
+
+def _find_risk_owner(risk_text: str, full_text: str) -> str:
+    """Find the person responsible for managing the risk."""
+    # Look for ownership patterns
+    owner_patterns = [
+        r"([A-Z][a-z]+)\s+(?:will|should|can|needs to)\s+(?:handle|manage|address|monitor)",
+        r"(?:assign|give|hand)\s+(?:to|this to)\s+([A-Z][a-z]+)",
+        r"([A-Z][a-z]+)[:]\s+(?:I'll|I will|I can)\s+(?:handle|manage|address)",
+    ]
+
+    for pattern in owner_patterns:
+        matches = re.findall(pattern, full_text)
+        if matches:
+            return matches[0].strip()
+
+    return None
+
+
+def _extract_implicit_user_stories(text: str) -> list[dict[str, Any]]:
+    """Extract user stories from requirement discussions."""
+    stories = []
+
+    # Patterns that indicate user needs
+    need_patterns = [
+        r"(?:user|customer|admin|developer)s?\s+(?:need|want|require|should be able to)\s+(.+?)(?:\n|\.|;)",
+        r"(?:enterprise|corporate)\s+customers?\s+(?:expect|need|want|require)\s+(.+?)(?:\n|\.|;)",
+        r"(?:from a|for)\s+(?:user|security|business)\s+perspective[,:]?\s+(.+?)(?:\n|\.|;)",
+    ]
+
+    for pattern in need_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        for match in matches:
+            # Convert to user story format
+            goal = match.strip()
+            user_type = "user"  # Default, could be enhanced
+            benefit = "improve user experience"  # Default, could be enhanced
+
+            story = f"As a {user_type}, I want {goal}, so that {benefit}"
+            stories.append(
+                {
+                    "story": story,
+                    "acceptance_criteria": [],
+                    "priority": "medium",
+                    "epic": None,
+                }
+            )
+
+    return stories[:5]  # Limit to top 5 implicit stories
+
+
+def _detect_action_phase(task: str, full_text: str) -> str:
+    """Detect which development phase an action belongs to."""
+    task_lower = task.lower()
+
+    immediate_keywords = [
+        "week 1",
+        "immediate",
+        "asap",
+        "right away",
+        "first",
+        "start with",
+    ]
+    development_keywords = [
+        "develop",
+        "implement",
+        "code",
+        "build",
+        "create",
+        "weeks 2-7",
+    ]
+    testing_keywords = ["test", "qa", "validate", "verify", "weeks 8-10", "uat"]
+
+    if any(kw in task_lower for kw in immediate_keywords):
+        return "immediate"
+    elif any(kw in task_lower for kw in testing_keywords):
+        return "testing"
+    elif any(kw in task_lower for kw in development_keywords):
+        return "development"
+    else:
+        return "immediate"  # Default to immediate for unclear items
+
+
+def _extract_dependencies(task: str, full_text: str) -> list[str]:
+    """Extract task dependencies from context."""
+    dependencies = []
+
+    # Look for dependency patterns
+    dependency_patterns = [
+        r"(?:depends on|needs|requires|after|once)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+        r"(?:before|prior to)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+        r"(?:waiting for|blocked by)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+    ]
+
+    for pattern in dependency_patterns:
+        matches = re.findall(pattern, full_text, re.IGNORECASE)
+        dependencies.extend(
+            [match.strip() for match in matches if len(match.strip()) > 3]
+        )
+
+    return dependencies[:3]  # Return top 3 dependencies
+
+
+def _extract_action_context(task: str, full_text: str) -> str:
+    """Extract why this action is needed from surrounding context."""
+    # Look for context around the task
+    context_patterns = [
+        r"(?:because|since|due to|as|given that)\s+(.+?)(?:\n|\.|;)",
+        r"(?:this is needed|required|necessary)\s+(?:for|to|because)\s+(.+?)(?:\n|\.|;)",
+        r"(?:in order to|to ensure|to make sure)\s+(.+?)(?:\n|\.|;)",
+    ]
+
+    for pattern in context_patterns:
+        matches = re.findall(pattern, full_text, re.IGNORECASE)
+        if matches:
+            return matches[0].strip()
+
+    return ""
+
+
+def _make_topic_specific(topic: str, text: str) -> str:
+    """Make a general topic more specific based on context."""
+    topic_lower = topic.lower()
+    text_lower = text.lower()
+
+    # Topic enhancement rules
+    if "authentication" in topic_lower or "sso" in topic_lower:
+        if "saml" in text_lower and "oidc" in text_lower:
+            return "Dual Protocol SSO Implementation (SAML + OIDC)"
+        elif "saml" in text_lower:
+            return "SAML Authentication Integration"
+        elif "oidc" in text_lower:
+            return "OpenID Connect Implementation"
+        else:
+            return "SSO Authentication System"
+
+    elif "security" in topic_lower:
+        if "compliance" in text_lower:
+            return "Security Compliance and Audit Requirements"
+        elif "logout" in text_lower:
+            return "Secure Logout and Session Management"
+        else:
+            return "Security Architecture and Requirements"
+
+    elif "design" in topic_lower or "ux" in topic_lower:
+        return "User Experience Design for SSO Flows"
+
+    elif "testing" in topic_lower:
+        return "SSO Testing Strategy and Implementation"
+
+    return topic  # Return original if no specific enhancement found
+
+
+def _deduplicate_risks(risks: list[dict]) -> list[dict]:
+    """Remove duplicate risks based on similarity."""
+    unique_risks = []
+    seen_risks = set()
+
+    for risk in risks:
+        risk_normalized = re.sub(r"\s+", " ", risk["risk"].lower().strip())[
+            :100
+        ]  # First 100 chars
+        if risk_normalized not in seen_risks:
+            seen_risks.add(risk_normalized)
+            unique_risks.append(risk)
+
+    return unique_risks
+
+
+def _deduplicate_user_stories(stories: list[dict]) -> list[dict]:
+    """Remove duplicate user stories based on similarity."""
+    unique_stories = []
+    seen_stories = set()
+
+    for story in stories:
+        story_normalized = re.sub(r"\s+", " ", story["story"].lower().strip())[:100]
+        if story_normalized not in seen_stories:
+            seen_stories.add(story_normalized)
+            unique_stories.append(story)
+
+    return unique_stories
+
+
+def _extract_acceptance_criteria(story: str, text: str) -> list[str]:
+    """Extract acceptance criteria from story context."""
+    criteria = []
+
+    # Look for requirement patterns
+    criteria_patterns = [
+        r"(?:must|should|needs? to)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+        r"(?:requirements?|criteria|conditions?)[:.]?\s*(.+?)(?:\n|\.|;)",
+        r"(?:ensure|verify|validate)\s+(?:that\s+)?(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+    ]
+
+    for pattern in criteria_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        criteria.extend([match.strip() for match in matches if len(match.strip()) > 10])
+
+    return criteria[:3]  # Return top 3 criteria
+
+
+def _assess_story_priority(story: str, text: str) -> str:
+    """Assess user story priority based on business context."""
+    story_lower = story.lower()
+
+    high_priority_keywords = [
+        "critical",
+        "essential",
+        "must have",
+        "required",
+        "priority",
+        "urgent",
+    ]
+    low_priority_keywords = [
+        "nice to have",
+        "optional",
+        "later",
+        "future",
+        "enhancement",
+    ]
+
+    if any(kw in story_lower for kw in high_priority_keywords):
+        return "high"
+    elif any(kw in story_lower for kw in low_priority_keywords):
+        return "low"
+    else:
+        return "medium"

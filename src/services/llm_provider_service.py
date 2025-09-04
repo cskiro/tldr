@@ -14,7 +14,7 @@ from src.models.decision import Decision, DecisionImpact, DecisionStatus
 from src.models.transcript import MeetingSummary
 
 from .base import SummarizationServiceBase
-from .prompts import MEETING_ANALYSIS_PROMPT
+from .prompts import MEETING_ANALYSIS_PROMPT_V2
 
 
 class LLMProviderService(SummarizationServiceBase):
@@ -254,7 +254,7 @@ Please respond with a valid JSON object only, no additional text:
 
     async def _generate_structured_response(self, transcript: str) -> Dict[str, Any]:
         """Generate structured response using the appropriate provider."""
-        prompt = MEETING_ANALYSIS_PROMPT.format(transcript=transcript)
+        prompt = MEETING_ANALYSIS_PROMPT_V2.format(transcript=transcript)
 
         try:
             if self.provider == "openai":
