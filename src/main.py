@@ -19,7 +19,7 @@ from src.core.middleware import (
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan events."""
     # Startup
     api_logger.info("Starting TLDR API application")

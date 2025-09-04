@@ -115,7 +115,7 @@ async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
             stage="file_upload",
             details=f"Failed to save uploaded file: {str(e)}",
             original_error=e
-        )
+        ) from e
 
 
 @router.post("/upload", response_model=APIResponse)
@@ -209,7 +209,7 @@ async def upload_transcript(
             for error in e.errors():
                 field_name = ".".join(str(loc) for loc in error["loc"])
                 field_errors[field_name] = error["msg"]
-            raise CustomValidationError(field_errors=field_errors)
+            raise CustomValidationError(field_errors=field_errors) from None
 
         # Store transcript data
         meetings_storage[meeting_id] = transcript.model_dump()
@@ -264,7 +264,7 @@ async def upload_transcript(
             stage="upload",
             details=f"Unexpected error during upload: {str(e)}",
             original_error=e
-        )
+        ) from e
 
 
 @router.post("/process", response_model=APIResponse)
@@ -380,7 +380,7 @@ async def process_transcript(request: ProcessingRequest, background_tasks: Backg
             stage="process_start",
             details=f"Unexpected error starting processing: {str(e)}",
             original_error=e
-        )
+        ) from e
 
 
 @router.get("/{meeting_id}/status", response_model=APIResponse)
@@ -444,4 +444,4 @@ async def get_processing_status(meeting_id: str):
             stage="status_check",
             details=f"Unexpected error checking status: {str(e)}",
             original_error=e
-        )
+        ) from e

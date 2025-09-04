@@ -144,7 +144,7 @@ async def readiness_probe():
                 "timestamp": current_time.isoformat(),
                 "message": f"Readiness check failed: {str(e)}"
             }
-        )
+        ) from e
 
 
 @router.get("/alive", response_model=LivenessResponse)

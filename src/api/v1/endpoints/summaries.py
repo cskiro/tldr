@@ -328,7 +328,7 @@ async def get_summary(
             stage="summary_retrieval",
             details=f"Unexpected error retrieving summary: {str(e)}",
             original_error=e
-        )
+        ) from e
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -366,14 +366,14 @@ async def list_summaries(
                 start_dt = datetime.fromisoformat(start_date).replace(tzinfo=UTC)
                 filtered_summaries = [s for s in filtered_summaries if s.created_at >= start_dt]
             except ValueError:
-                raise ValidationError({"start_date": "Invalid date format. Use YYYY-MM-DD"})
+                raise ValidationError({"start_date": "Invalid date format. Use YYYY-MM-DD"}) from None
 
         if end_date:
             try:
                 end_dt = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59, tzinfo=UTC)
                 filtered_summaries = [s for s in filtered_summaries if s.created_at <= end_dt]
             except ValueError:
-                raise ValidationError({"end_date": "Invalid date format. Use YYYY-MM-DD"})
+                raise ValidationError({"end_date": "Invalid date format. Use YYYY-MM-DD"}) from None
 
         # Sort summaries
         reverse_order = sort_order.lower() == "desc"
@@ -415,7 +415,7 @@ async def list_summaries(
             stage="summary_list",
             details=f"Unexpected error listing summaries: {str(e)}",
             original_error=e
-        )
+        ) from e
 
 
 @router.post("/export", response_model=None)
@@ -494,7 +494,7 @@ async def export_summary(request: ExportRequest):
             stage="summary_export",
             details=f"Unexpected error exporting summary: {str(e)}",
             original_error=e
-        )
+        ) from e
 
 
 @router.post("/bulk-export", response_model=None)
@@ -594,4 +594,4 @@ async def bulk_export_summaries(request: BulkExportRequest):
             stage="bulk_export",
             details=f"Unexpected error in bulk export: {str(e)}",
             original_error=e
-        )
+        ) from e

@@ -115,9 +115,9 @@ class TranscriptInput(BaseModelWithConfig):
     def validate_content_source(cls, v: str | None, info) -> str | None:
         """Ensure at least one content source is provided."""
         # Only validate when both fields are processed
-        if hasattr(info, 'data') and 'audio_url' in info.data:
-            if v is None and info.data.get("audio_url") is None:
-                raise ValueError("Either raw_text or audio_url must be provided")
+        if (hasattr(info, 'data') and 'audio_url' in info.data and
+            v is None and info.data.get("audio_url") is None):
+            raise ValueError("Either raw_text or audio_url must be provided")
         return v
 
 

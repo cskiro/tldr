@@ -21,7 +21,7 @@ from src.models.base import APIResponse
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log HTTP requests and responses with timing information."""
 
-    def __init__(self, app, logger_name: str = "tldr.api"):
+    def __init__(self, app, _logger_name: str = "tldr.api"):
         super().__init__(app)
         self.logger = api_logger
 

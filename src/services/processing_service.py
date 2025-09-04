@@ -157,7 +157,7 @@ class ProcessingService:
                 stage="processing",
                 details=error_message,
                 original_error=e
-            )
+            ) from e
 
     async def _extract_transcript_text(self, meeting_id: str, meeting_data: dict[str, Any]) -> str:
         """
@@ -203,7 +203,7 @@ class ProcessingService:
                 stage="text_extraction",
                 details=f"Failed to extract transcript text: {str(e)}",
                 original_error=e
-            )
+            ) from e
 
     async def _update_processing_status(
         self,
