@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from pydantic import ValidationError
 
 from src.models.base import (
     APIResponse,
@@ -58,10 +59,13 @@ class TestBaseModelWithConfig:
     def test_should_validate_default_values(self):
         """Test that default values are validated."""
 
-        with pytest.raises(ValueError):
+        # Pydantic V2 validates on instantiation, not class definition
+        class TestModel(BaseModelWithConfig):
+            value: int = "invalid_default"  # type: ignore
 
-            class TestModel(BaseModelWithConfig):
-                value: int = "invalid_default"
+        # The validation happens when creating an instance
+        with pytest.raises((ValidationError, ValueError)):
+            TestModel()
 
 
 class TestTimestampedModel:
@@ -262,7 +266,11 @@ class TestPaginatedResponse:
         # Test validation constraints
         with pytest.raises(ValueError):
             PaginatedResponse(
-                items=[], total=-1, page=1, size=10, pages=1  # Invalid: negative total
+                items=[],
+                total=-1,
+                page=1,
+                size=10,
+                pages=1,  # Invalid: negative total
             )
 
         with pytest.raises(ValueError):
@@ -276,7 +284,11 @@ class TestPaginatedResponse:
 
         with pytest.raises(ValueError):
             PaginatedResponse(
-                items=[], total=10, page=1, size=101, pages=1  # Invalid: size too large
+                items=[],
+                total=10,
+                page=1,
+                size=101,
+                pages=1,  # Invalid: size too large
             )
 
     def test_should_serialize_correctly(self):
