@@ -2,8 +2,7 @@
 
 import time
 import traceback
-from collections.abc import Awaitable, Callable
-from typing import Any
+from collections.abc import Callable
 
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse

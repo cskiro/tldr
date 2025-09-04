@@ -74,7 +74,8 @@ async def validate_audio_file(file: UploadFile) -> None:
     # Check content type
     if file.content_type not in SUPPORTED_AUDIO_FORMATS:
         raise UnsupportedFormatError(
-            format_type=file.content_type or "unknown", supported_formats=SUPPORTED_AUDIO_FORMATS
+            format_type=file.content_type or "unknown",
+            supported_formats=SUPPORTED_AUDIO_FORMATS,
         )
 
 
