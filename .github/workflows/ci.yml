@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tldr_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install UV
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv pip install -r requirements-dev.txt
+    
+    - name: Lint with ruff
+      run: |
+        source .venv/bin/activate
+        ruff check src/ tests/
+    
+    - name: Format check with black
+      run: |
+        source .venv/bin/activate
+        black --check src/ tests/
+    
+    - name: Type check with mypy
+      run: |
+        source .venv/bin/activate
+        mypy src/
+    
+    - name: Test with pytest
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tldr_test
+        SECRET_KEY: test-secret-key
+        OPENAI_API_KEY: test-key
+        ASSEMBLYAI_API_KEY: test-key
+      run: |
+        source .venv/bin/activate
+        pytest --cov=src --cov-report=xml --cov-report=term-missing
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run security checks
+      uses: securecodewarrior/github-action-add-sarif@v1
+      with:
+        sarif-file: 'security-scan-results.sarif'

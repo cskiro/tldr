@@ -1,0 +1,24 @@
+# Global owners
+* @connor
+
+# Core application
+/src/ @connor
+
+# Documentation
+/docs/ @connor
+*.md @connor
+
+# Configuration files
+pyproject.toml @connor
+requirements*.txt @connor
+.github/ @connor
+
+# Security and sensitive files
+SECURITY.md @connor
+.env.example @connor
+
+# CI/CD
+/.github/workflows/ @connor
+
+# Tests
+/tests/ @connor
