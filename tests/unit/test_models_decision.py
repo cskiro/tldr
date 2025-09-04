@@ -226,7 +226,9 @@ class TestDecision:
         """Test due for review detection."""
         # Past review date
         past_date = datetime.now(UTC) - timedelta(hours=1)
-        past_review = create_decision_with_past_date(valid_decision_data, past_date, "review_date")
+        past_review = create_decision_with_past_date(
+            valid_decision_data, past_date, "review_date"
+        )
         assert past_review.is_due_for_review() is True
 
         # Future review date
@@ -250,7 +252,9 @@ class TestDecision:
 
         # Past date (negative days)
         past_date = datetime.now(UTC) - timedelta(days=5)
-        past_impl = create_decision_with_past_date(valid_decision_data, past_date, "implementation_date")
+        past_impl = create_decision_with_past_date(
+            valid_decision_data, past_date, "implementation_date"
+        )
         # Allow for -5 or -6 days due to timezone/precision differences
         assert past_impl.days_until_implementation() in [-6, -5]
 

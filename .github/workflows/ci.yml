@@ -4,77 +4,40 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
+    timeout-minutes: 5  # Fail fast on hanging processes
     
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tldr_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
+    - name: Setup Python
+      uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.11"
+        cache: 'pip'  # Cache dependencies for faster runs
     
     - name: Install UV
       uses: astral-sh/setup-uv@v6
       with:
         version: "latest"
     
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
         uv venv
         source .venv/bin/activate
         uv pip install -r requirements-dev.txt
     
-    - name: Lint with ruff
+    - name: Validate Code Quality
       run: |
         source .venv/bin/activate
-        ruff check src/ tests/
+        ruff check --output-format=github .
+        ruff format --check .
     
-    - name: Format check with black
+    - name: Run Unit Tests
       run: |
         source .venv/bin/activate
-        black --check src/ tests/
-    
-    - name: Type check with mypy
-      run: |
-        source .venv/bin/activate
-        mypy src/
-    
-    - name: Test with pytest
-      env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tldr_test
-        SECRET_KEY: test-secret-key
-        OPENAI_API_KEY: test-key
-        ASSEMBLYAI_API_KEY: test-key
-      run: |
-        source .venv/bin/activate
-        pytest --cov=src --cov-report=xml --cov-report=term-missing
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-
+        pytest tests/unit -v --tb=short

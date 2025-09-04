@@ -176,7 +176,9 @@ class TestActionItem:
         future_due = datetime.now(UTC) + timedelta(days=1)
 
         # Overdue item - use test utility to create with past due date
-        overdue_item = create_action_item_with_past_date(valid_action_item_data, past_due)
+        overdue_item = create_action_item_with_past_date(
+            valid_action_item_data, past_due
+        )
         assert overdue_item.is_overdue() is True
 
         # Not overdue
@@ -188,7 +190,9 @@ class TestActionItem:
         assert no_date_item.is_overdue() is False
 
         # Completed item (not overdue even if past due date)
-        completed_item = create_action_item_with_past_date(valid_action_item_data, past_due)
+        completed_item = create_action_item_with_past_date(
+            valid_action_item_data, past_due
+        )
         completed_item.mark_completed()
         assert completed_item.is_overdue() is False
 

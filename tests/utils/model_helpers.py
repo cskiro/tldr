@@ -35,9 +35,7 @@ def create_action_item_with_past_date(
 
 
 def create_decision_with_past_date(
-    data: dict[str, Any],
-    past_date: datetime,
-    date_field: str = "review_date"
+    data: dict[str, Any], past_date: datetime, date_field: str = "review_date"
 ) -> Decision:
     """Create Decision with past implementation/review date for testing.
 
