@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLDR AI Processing Test Interface</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .results-section {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        textarea.form-control {
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .provider-card {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .provider-card:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+        
+        .provider-card.selected {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .provider-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .result-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+        
+        .result-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #3498db;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+        
+        .result-content {
+            line-height: 1.6;
+        }
+        
+        .result-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .result-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .result-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .confidence-score {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #e8f5e8;
+            color: #2d5a2d;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 TLDR AI Processing Test</h1>
+            <p>Test your meeting transcript processing with different AI providers</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <h3>Input Configuration</h3>
+                
+                <div class="form-group">
+                    <label>Available AI Providers</label>
+                    <div class="provider-grid" id="providerGrid">
+                        <!-- Providers will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apiKey">API Key (for cloud providers)</label>
+                    <input type="password" class="form-control" id="apiKey" 
+                           placeholder="Optional - only needed for OpenAI/Anthropic">
+                </div>
+                
+                <div class="form-group">
+                    <label for="meetingId">Meeting ID</label>
+                    <input type="text" class="form-control" id="meetingId" 
+                           value="test_meeting_001" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="transcript">Meeting Transcript</label>
+                    <textarea class="form-control" id="transcript" 
+                              placeholder="Paste your meeting transcript here..." required></textarea>
+                </div>
+                
+                <button class="btn" onclick="processTranscript()">
+                    🚀 Process Transcript
+                </button>
+            </div>
+            
+            <div class="results-section">
+                <h3>Processing Results</h3>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your transcript...</p>
+                    <p id="loadingStatus">Initializing AI service...</p>
+                </div>
+                
+                <div class="results" id="results">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedProvider = 'ollama';
+        let providers = {};
+        
+        // Sample transcript for testing
+        const SAMPLE_TRANSCRIPT = `Meeting: Product Planning Session
+Date: September 4, 2025
+Participants: Sarah (Product Manager), Mike (Engineering Lead), Lisa (Designer)
+
+Sarah: Good morning everyone. Let's discuss our Q4 roadmap. We need to prioritize the new user dashboard feature.
+
+Mike: I've reviewed the requirements. The dashboard will require significant backend changes. I estimate 6-8 weeks of development.
+
+Lisa: From a UX perspective, we should focus on mobile-first design. The current mockups don't work well on smaller screens.
+
+Sarah: Great points. Let's make a decision here - we'll prioritize mobile-first design and adjust the timeline accordingly. Mike, can you update your estimates?
+
+Mike: With mobile-first constraints, I'd say 8-10 weeks. We'll need to refactor our responsive framework.
+
+Sarah: Agreed. Lisa, please create user stories for the mobile experience by end of this week.
+
+Lisa: Will do. I'll focus on the core user journeys first.
+
+Sarah: Perfect. Action items: Mike will provide updated technical spec by Friday, Lisa will deliver mobile user stories by Friday, and I'll update the stakeholders on our new timeline.
+
+Mike: One risk I want to highlight - if we run into issues with the responsive framework, we might need additional resources.
+
+Sarah: Good point. Let's plan for that contingency. If we hit roadblocks, we'll bring in a frontend contractor.
+
+Lisa: That makes sense. Should we set up weekly check-ins to track progress?
+
+Sarah: Yes, let's do weekly standups starting next Monday. Meeting adjourned.`;
+
+        // Initialize the interface
+        async function init() {
+            await loadProviders();
+            document.getElementById('transcript').value = SAMPLE_TRANSCRIPT;
+        }
+        
+        async function loadProviders() {
+            try {
+                const response = await fetch('/api/v1/providers/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    providers = data.data.providers;
+                    selectedProvider = data.data.recommended;
+                    renderProviders();
+                }
+            } catch (error) {
+                console.error('Failed to load providers:', error);
+                // Fallback to mock data
+                providers = {
+                    ollama: { available: true, configured: true, cost: 'free', quality: 'good' },
+                    openai: { available: false, configured: false, cost: 'paid', quality: 'excellent' },
+                    anthropic: { available: false, configured: false, cost: 'paid', quality: 'excellent' },
+                    mock: { available: true, configured: true, cost: 'free', quality: 'basic' }
+                };
+                renderProviders();
+            }
+        }
+        
+        function renderProviders() {
+            const grid = document.getElementById('providerGrid');
+            grid.innerHTML = '';
+            
+            for (const [name, info] of Object.entries(providers)) {
+                const card = document.createElement('div');
+                card.className = `provider-card ${selectedProvider === name ? 'selected' : ''}`;
+                card.onclick = () => selectProvider(name);
+                
+                const statusClass = info.available ? 'status-available' : 'status-unavailable';
+                const statusText = info.available ? '✅ Available' : '❌ Unavailable';
+                
+                card.innerHTML = `
+                    <strong>${name.toUpperCase()}</strong><br>
+                    <small>Quality: ${info.quality}</small><br>
+                    <small>Cost: ${info.cost}</small><br>
+                    <span class="provider-status ${statusClass}">${statusText}</span>
+                `;
+                
+                grid.appendChild(card);
+            }
+        }
+        
+        function selectProvider(providerName) {
+            selectedProvider = providerName;
+            renderProviders();
+            
+            // Show/hide API key field
+            const apiKeyGroup = document.getElementById('apiKey').closest('.form-group');
+            if (providerName === 'openai' || providerName === 'anthropic') {
+                apiKeyGroup.style.display = 'block';
+            } else {
+                apiKeyGroup.style.display = 'none';
+            }
+        }
+        
+        async function processTranscript() {
+            const meetingId = document.getElementById('meetingId').value;
+            const transcript = document.getElementById('transcript').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!meetingId || !transcript) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                // Step 1: Upload transcript
+                updateLoadingStatus('Uploading transcript...');
+                const uploadData = new FormData();
+                uploadData.append('meeting_id', meetingId);
+                uploadData.append('participants', 'Test User');
+                uploadData.append('duration_minutes', '30');
+                uploadData.append('meeting_type', 'general');
+                uploadData.append('raw_text', transcript);
+                
+                const uploadResponse = await fetch('/api/v1/transcripts/upload', {
+                    method: 'POST',
+                    body: uploadData
+                });
+                
+                const uploadResult = await uploadResponse.json();
+                if (!uploadResult.success) {
+                    throw new Error(uploadResult.message || 'Upload failed');
+                }
+                
+                // Step 2: Process transcript
+                updateLoadingStatus('Processing with AI...');
+                const processData = {
+                    meeting_id: meetingId,
+                    provider: selectedProvider,
+                    api_key: apiKey || null
+                };
+                
+                const processResponse = await fetch('/api/v1/transcripts/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(processData)
+                });
+                
+                const processResult = await processResponse.json();
+                if (!processResult.success) {
+                    throw new Error(processResult.message || 'Processing failed');
+                }
+                
+                // Step 3: Poll for completion
+                updateLoadingStatus('Waiting for AI processing to complete...');
+                await pollForCompletion(meetingId);
+                
+                // Step 4: Get summary
+                updateLoadingStatus('Retrieving results...');
+                const summaryResponse = await fetch(`/api/v1/summaries/${meetingId}`);
+                const summaryResult = await summaryResponse.json();
+                
+                if (summaryResult.success) {
+                    displayResults(summaryResult.data);
+                } else {
+                    throw new Error(summaryResult.message || 'Failed to retrieve summary');
+                }
+                
+            } catch (error) {
+                console.error('Processing failed:', error);
+                displayError(error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        async function pollForCompletion(meetingId, maxAttempts = 30) {
+            for (let i = 0; i < maxAttempts; i++) {
+                const statusResponse = await fetch(`/api/v1/transcripts/${meetingId}/status`);
+                const statusResult = await statusResponse.json();
+                
+                if (statusResult.success) {
+                    const status = statusResult.data.status;
+                    
+                    if (status === 'completed') {
+                        return;
+                    } else if (status === 'failed') {
+                        throw new Error(statusResult.data.error_message || 'Processing failed');
+                    } else {
+                        updateLoadingStatus(`Processing... (${statusResult.data.progress_percentage || 0}%)`);
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                    }
+                } else {
+                    throw new Error('Failed to check status');
+                }
+            }
+            
+            throw new Error('Processing timed out');
+        }
+        
+        function updateLoadingStatus(message) {
+            document.getElementById('loadingStatus').textContent = message;
+        }
+        
+        function displayResults(summary) {
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = `
+                <div class="result-item">
+                    <div class="result-title">📊 Processing Summary</div>
+                    <div class="result-content">
+                        <p><strong>Provider:</strong> ${selectedProvider.toUpperCase()}</p>
+                        <p><strong>Processing Time:</strong> ${summary.processing_time_seconds}s</p>
+                        <p><strong>Confidence:</strong> <span class="confidence-score">${Math.round(summary.confidence_score * 100)}%</span></p>
+                        <p><strong>Sentiment:</strong> ${summary.sentiment}</p>
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-title">📝 Executive Summary</div>
+                    <div class="result-content">${summary.summary}</div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-title">👥 Participants (${summary.participants.length})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.participants.map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-title">📌 Key Topics (${summary.key_topics.length})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.key_topics.map(t => `<li>${t}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-title">✅ Action Items (${summary.action_items.length})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.action_items.map(item => `
+                                <li><strong>${item.task}</strong><br>
+                                    Assigned to: ${item.assignee} | 
+                                    Priority: ${item.priority} |
+                                    Status: ${item.status}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-title">🎯 Decisions (${summary.decisions.length})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.decisions.map(decision => `
+                                <li><strong>${decision.decision}</strong><br>
+                                    Made by: ${decision.made_by} | 
+                                    Impact: ${decision.impact} |
+                                    Status: ${decision.status}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <div class="result-title">🎯 Next Steps (${summary.next_steps.length})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.next_steps.map(step => `<li>${step}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.style.display = 'block';
+        }
+        
+        function displayError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="error-message">
+                    <strong>❌ Processing Failed</strong><br>
+                    ${message}
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+        }
+        
+        // Initialize when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>

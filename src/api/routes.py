@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from src.api.v1.endpoints import health, summaries, transcripts
+from src.api.v1.endpoints import health, providers, summaries, transcripts
 
 # Create main API router
 api_router = APIRouter()
@@ -13,6 +13,7 @@ api_router.include_router(
     transcripts.router, prefix="/transcripts", tags=["transcripts"]
 )
 api_router.include_router(summaries.router, prefix="/summaries", tags=["summaries"])
+api_router.include_router(providers.router, prefix="/providers", tags=["providers"])
 
 
 @api_router.get("/")
@@ -25,5 +26,6 @@ async def api_root():
             "health": "/api/v1/health",
             "transcripts": "/api/v1/transcripts",
             "summaries": "/api/v1/summaries",
+            "providers": "/api/v1/providers",
         },
     }

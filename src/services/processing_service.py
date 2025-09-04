@@ -1,14 +1,14 @@
 """Processing service for orchestrating transcript analysis pipeline."""
 
 import time
-from typing import Any
+from typing import Any, Optional
 
 from src.core.exceptions import ProcessingError
 from src.core.logging import processing_logger, service_logger
 from src.models.transcript import ProcessingStatus, TranscriptStatus
 
 from .base import SummarizationServiceBase
-from .mock_summarization_service import MockSummarizationService
+from .summarization_factory import create_summarization_service
 
 
 class ProcessingService:
@@ -23,18 +23,32 @@ class ProcessingService:
     5. Error handling and recovery
     """
 
-    def __init__(self, summarization_service: SummarizationServiceBase | None = None):
+    def __init__(
+        self, 
+        summarization_service: Optional[SummarizationServiceBase] = None,
+        provider: Optional[str] = None,
+        api_key: Optional[str] = None
+    ):
         """
         Initialize the processing service.
 
         Args:
             summarization_service: Service to use for AI processing.
-                                 Defaults to MockSummarizationService.
+            provider: LLM provider to use (ollama, openai, anthropic, mock).
+            api_key: API key for cloud providers.
         """
-        self.summarization_service = summarization_service or MockSummarizationService()
+        if summarization_service:
+            self.summarization_service = summarization_service
+        else:
+            self.summarization_service = create_summarization_service(provider, api_key)
+            
         service_logger.info(
             "ProcessingService initialized",
-            summarization_service=type(self.summarization_service).__name__,
+            extra={
+                "summarization_service": type(self.summarization_service).__name__,
+                "provider": getattr(self.summarization_service, 'provider', 'local'),
+                "has_custom_api_key": bool(api_key)
+            }
         )
 
     async def process_meeting(
@@ -297,17 +311,21 @@ class ProcessingService:
 
 
 # Convenience function for getting the appropriate processing service
-def get_processing_service() -> ProcessingService:
+def get_processing_service(
+    provider: Optional[str] = None, 
+    api_key: Optional[str] = None
+) -> ProcessingService:
     """
     Factory function to get the appropriate processing service.
+
+    Args:
+        provider: LLM provider to use (ollama, openai, anthropic, mock)
+        api_key: API key for cloud providers
 
     Returns:
         Configured ProcessingService instance
     """
-    # For now, always use mock service
-    # In the future, this could check configuration to decide which service to use
-    summarization_service = MockSummarizationService()
-    return ProcessingService(summarization_service)
+    return ProcessingService(provider=provider, api_key=api_key)
 
 
 # Background task processing for async operations
@@ -316,6 +334,8 @@ async def process_meeting_background(
     meetings_storage: dict[str, dict[str, Any]],
     processing_status_storage: dict[str, ProcessingStatus],
     summaries_storage: dict[str, Any],
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> None:
     """
     Background task wrapper for processing meetings.
@@ -328,8 +348,10 @@ async def process_meeting_background(
         meetings_storage: Meeting data storage
         processing_status_storage: Processing status storage
         summaries_storage: Summary results storage
+        provider: LLM provider to use (ollama, openai, anthropic, mock)
+        api_key: API key for cloud providers
     """
-    processing_service = get_processing_service()
+    processing_service = get_processing_service(provider, api_key)
 
     try:
         await processing_service.process_meeting(
