@@ -25,11 +25,11 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     assemblyai_api_key: str = ""
-    
+
     # Ollama Configuration
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:3b"
-    
+
     # Processing Configuration
     max_tokens: int = 4000
     temperature: float = 0.1

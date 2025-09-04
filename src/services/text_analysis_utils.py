@@ -284,7 +284,7 @@ def identify_key_topics_from_text(text: str) -> list[str]:
     # Ensure at least one topic is returned (validation requirement)
     if not topics:
         topics = ["General Discussion"]
-    
+
     return topics[:10]  # Return top 10 topics
 
 

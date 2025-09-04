@@ -105,18 +105,18 @@ class TestAIServiceIntegration:
     async def test_provider_availability(self):
         """Test provider availability checking."""
         providers = get_available_providers()
-        
+
         # Should have all 4 providers
         assert len(providers) == 4
         assert "ollama" in providers
         assert "openai" in providers
         assert "anthropic" in providers
         assert "mock" in providers
-        
+
         # Mock should always be available
         assert providers["mock"]["available"] is True
         assert providers["mock"]["configured"] is True
-        
+
         # Check provider properties
         for name, info in providers.items():
             assert "available" in info
@@ -132,11 +132,11 @@ class TestAIServiceIntegration:
         result = validate_provider_config("mock")
         assert result["valid"] is True
         assert result["available"] is True
-        
+
         # Test unknown provider
         result = validate_provider_config("unknown_provider")
         assert result["valid"] is False
-        
+
         # Test OpenAI without API key
         result = validate_provider_config("openai")
         assert result["valid"] is False
@@ -147,12 +147,11 @@ class TestAIServiceIntegration:
         """Test mock service functionality."""
         service = create_summarization_service("mock")
         assert isinstance(service, MockSummarizationService)
-        
+
         summary = await service.summarize_transcript(
-            meeting_id=sample_meeting_id,
-            transcript_text=SAMPLE_TRANSCRIPT
+            meeting_id=sample_meeting_id, transcript_text=SAMPLE_TRANSCRIPT
         )
-        
+
         assert isinstance(summary, MeetingSummary)
         assert summary.meeting_id == sample_meeting_id
         assert len(summary.summary) >= 10  # Minimum length
@@ -164,43 +163,43 @@ class TestAIServiceIntegration:
     async def test_service_factory_fallback(self):
         """Test service factory fallback behavior."""
         # Test with invalid provider falls back to available service
-        with patch('src.services.summarization_factory.get_available_providers') as mock_providers:
+        with patch(
+            "src.services.summarization_factory.get_available_providers"
+        ) as mock_providers:
             mock_providers.return_value = {
                 "ollama": {"available": False, "configured": True},
                 "openai": {"available": False, "configured": False},
                 "anthropic": {"available": False, "configured": False},
-                "mock": {"available": True, "configured": True}
+                "mock": {"available": True, "configured": True},
             }
-            
+
             service = create_summarization_service("invalid_provider")
             assert isinstance(service, MockSummarizationService)
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_transcript_processing_quality(self, sample_meeting_id):
         """Test transcript processing quality across different services."""
         # Test with mock service
         mock_service = create_summarization_service("mock")
         mock_summary = await mock_service.summarize_transcript(
-            meeting_id=sample_meeting_id,
-            transcript_text=SAMPLE_TRANSCRIPT
+            meeting_id=sample_meeting_id, transcript_text=SAMPLE_TRANSCRIPT
         )
-        
+
         # Basic quality checks
         assert len(mock_summary.key_topics) >= 1
         assert mock_summary.confidence_score > 0.0
         assert len(mock_summary.summary) >= 10
-        
+
         # Test with different transcript lengths
         short_summary = await mock_service.summarize_transcript(
-            meeting_id=sample_meeting_id + "_short",
-            transcript_text=SHORT_TRANSCRIPT
+            meeting_id=sample_meeting_id + "_short", transcript_text=SHORT_TRANSCRIPT
         )
-        
+
         complex_summary = await mock_service.summarize_transcript(
-            meeting_id=sample_meeting_id + "_complex", 
-            transcript_text=COMPLEX_TRANSCRIPT
+            meeting_id=sample_meeting_id + "_complex",
+            transcript_text=COMPLEX_TRANSCRIPT,
         )
-        
+
         # All should produce valid summaries
         for summary in [short_summary, complex_summary]:
             assert len(summary.key_topics) >= 1
@@ -211,16 +210,15 @@ class TestAIServiceIntegration:
     async def test_performance_benchmarks(self, sample_meeting_id):
         """Test processing performance benchmarks."""
         service = create_summarization_service("mock")
-        
+
         start_time = time.time()
         summary = await service.summarize_transcript(
-            meeting_id=sample_meeting_id,
-            transcript_text=SAMPLE_TRANSCRIPT
+            meeting_id=sample_meeting_id, transcript_text=SAMPLE_TRANSCRIPT
         )
         end_time = time.time()
-        
+
         processing_time = end_time - start_time
-        
+
         # Mock service should be very fast
         assert processing_time < 5.0  # Should complete within 5 seconds
         assert summary.processing_time_seconds > 0.0
@@ -229,51 +227,48 @@ class TestAIServiceIntegration:
     async def test_error_handling(self, sample_meeting_id):
         """Test error handling and graceful degradation."""
         service = create_summarization_service("mock")
-        
+
         # Test with empty transcript
         summary = await service.summarize_transcript(
-            meeting_id=sample_meeting_id,
-            transcript_text=""
+            meeting_id=sample_meeting_id, transcript_text=""
         )
-        
+
         # Should still produce a valid summary
         assert isinstance(summary, MeetingSummary)
         assert len(summary.key_topics) >= 1
         assert summary.confidence_score >= 0.0
-        
+
         # Test with very short transcript
         summary = await service.summarize_transcript(
-            meeting_id=sample_meeting_id,
-            transcript_text="Hi"
+            meeting_id=sample_meeting_id, transcript_text="Hi"
         )
-        
+
         assert isinstance(summary, MeetingSummary)
         assert len(summary.key_topics) >= 1
 
     @pytest.mark.skipif(
-        not get_available_providers()["ollama"]["available"], 
-        reason="Ollama not available"
+        not get_available_providers()["ollama"]["available"],
+        reason="Ollama not available",
     )
     @pytest.mark.asyncio
     async def test_ollama_service_integration(self, sample_meeting_id):
         """Test Ollama service integration (only if available)."""
         service = create_summarization_service("ollama")
         assert isinstance(service, OllamaService)
-        
+
         summary = await service.summarize_transcript(
-            meeting_id=sample_meeting_id,
-            transcript_text=SAMPLE_TRANSCRIPT
+            meeting_id=sample_meeting_id, transcript_text=SAMPLE_TRANSCRIPT
         )
-        
+
         # Ollama should produce higher quality results
         assert isinstance(summary, MeetingSummary)
         assert summary.meeting_id == sample_meeting_id
         assert len(summary.key_topics) >= 1
         assert summary.confidence_score >= 0.4  # Should be reasonable quality
-        
+
         # Should extract some meaningful information
         assert len(summary.summary) >= 50  # More detailed summary
-        
+
         # Performance check (should be reasonable but slower than mock)
         assert summary.processing_time_seconds < 120  # Should complete within 2 minutes
 
@@ -281,33 +276,35 @@ class TestAIServiceIntegration:
     async def test_service_comparison(self, sample_meeting_id):
         """Compare different service outputs for the same transcript."""
         services_to_test = []
-        
+
         # Always test mock
         services_to_test.append(("mock", create_summarization_service("mock")))
-        
+
         # Test Ollama if available
         if get_available_providers()["ollama"]["available"]:
             services_to_test.append(("ollama", create_summarization_service("ollama")))
-        
+
         results = {}
-        
+
         for service_name, service in services_to_test:
             summary = await service.summarize_transcript(
                 meeting_id=f"{sample_meeting_id}_{service_name}",
-                transcript_text=SAMPLE_TRANSCRIPT
+                transcript_text=SAMPLE_TRANSCRIPT,
             )
             results[service_name] = summary
-        
+
         # Compare results
         for service_name, summary in results.items():
             assert len(summary.key_topics) >= 1, f"{service_name} should extract topics"
-            assert summary.confidence_score > 0.0, f"{service_name} should have confidence"
-            
+            assert summary.confidence_score > 0.0, (
+                f"{service_name} should have confidence"
+            )
+
         # If we have both services, compare quality
         if "mock" in results and "ollama" in results:
             # Ollama should generally be more detailed
             assert len(results["ollama"].summary) >= len(results["mock"].summary) * 0.5
-            
+
         print("\n📊 Service Comparison Results:")
         for service_name, summary in results.items():
             print(f"  {service_name.upper()}:")
@@ -321,30 +318,29 @@ class TestAIServiceIntegration:
     async def test_concurrent_processing(self):
         """Test concurrent processing capabilities."""
         service = create_summarization_service("mock")
-        
+
         # Create multiple tasks
         tasks = []
         meeting_ids = [f"concurrent_test_{i}" for i in range(3)]
         transcripts = [SHORT_TRANSCRIPT, SAMPLE_TRANSCRIPT, COMPLEX_TRANSCRIPT]
-        
+
         for meeting_id, transcript in zip(meeting_ids, transcripts):
             task = service.summarize_transcript(
-                meeting_id=meeting_id,
-                transcript_text=transcript
+                meeting_id=meeting_id, transcript_text=transcript
             )
             tasks.append(task)
-        
+
         # Run concurrently
         start_time = time.time()
         summaries = await asyncio.gather(*tasks)
         end_time = time.time()
-        
+
         # All should complete successfully
         assert len(summaries) == 3
         for i, summary in enumerate(summaries):
             assert summary.meeting_id == meeting_ids[i]
             assert len(summary.key_topics) >= 1
-        
+
         # Concurrent processing should be efficient
         total_time = end_time - start_time
         print(f"\n⏱️ Concurrent processing of 3 transcripts: {total_time:.2f}s")

@@ -72,27 +72,27 @@ FALLBACK_EXTRACTION_PATTERNS = {
         r"(?:action item|todo|task|follow up):\s*(.+?)(?:\n|$)",
         r"(.+?)\s+(?:will|should|needs to)\s+(.+?)(?:\s+by\s+(\S+?))?(?:\n|$)",
         r"@(\w+)\s+(.+?)(?:\s+due\s+(\S+?))?(?:\n|$)",
-        r"(\w+)\s+(?:to|will)\s+(.+?)(?:\s+by\s+(.+?))?(?:\n|$)"
+        r"(\w+)\s+(?:to|will)\s+(.+?)(?:\s+by\s+(.+?))?(?:\n|$)",
     ],
     "decisions": [
         r"(?:decision|decided|agreed):\s*(.+?)(?:\n|$)",
         r"we\s+(?:decided|agreed)\s+(?:to|that)\s+(.+?)(?:\n|$)",
-        r"(?:concluded|resolution):\s*(.+?)(?:\n|$)"
+        r"(?:concluded|resolution):\s*(.+?)(?:\n|$)",
     ],
     "risks": [
         r"(?:risk|concern|issue|problem):\s*(.+?)(?:\n|$)",
         r"(?:might|could|may)\s+(?:be|cause|lead to)\s+(.+?)(?:\n|$)",
-        r"(?:potential|possible)\s+(.+?)(?:\n|$)"
+        r"(?:potential|possible)\s+(.+?)(?:\n|$)",
     ],
     "user_stories": [
         r"as\s+a\s+(.+?),\s*i\s+want\s+(.+?),?\s*so\s+that\s+(.+?)(?:\n|$)",
-        r"user\s+story:\s*(.+?)(?:\n|$)"
+        r"user\s+story:\s*(.+?)(?:\n|$)",
     ],
     "participants": [
         r"\[(\d{2}:\d{2}:\d{2})\]\s+([A-Z][a-zA-Z\s]+):",
         r"^([A-Z][a-zA-Z\s]+):",
-        r"@(\w+)"
-    ]
+        r"@(\w+)",
+    ],
 }
 
 # Simplified prompt for basic summarization (fallback)

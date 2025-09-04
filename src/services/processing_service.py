@@ -24,10 +24,10 @@ class ProcessingService:
     """
 
     def __init__(
-        self, 
+        self,
         summarization_service: Optional[SummarizationServiceBase] = None,
         provider: Optional[str] = None,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
     ):
         """
         Initialize the processing service.
@@ -41,14 +41,14 @@ class ProcessingService:
             self.summarization_service = summarization_service
         else:
             self.summarization_service = create_summarization_service(provider, api_key)
-            
+
         service_logger.info(
             "ProcessingService initialized",
             extra={
                 "summarization_service": type(self.summarization_service).__name__,
-                "provider": getattr(self.summarization_service, 'provider', 'local'),
-                "has_custom_api_key": bool(api_key)
-            }
+                "provider": getattr(self.summarization_service, "provider", "local"),
+                "has_custom_api_key": bool(api_key),
+            },
         )
 
     async def process_meeting(
@@ -312,8 +312,7 @@ class ProcessingService:
 
 # Convenience function for getting the appropriate processing service
 def get_processing_service(
-    provider: Optional[str] = None, 
-    api_key: Optional[str] = None
+    provider: Optional[str] = None, api_key: Optional[str] = None
 ) -> ProcessingService:
     """
     Factory function to get the appropriate processing service.

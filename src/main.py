@@ -146,8 +146,7 @@ async def test_interface():
             return f.read()
     except FileNotFoundError:
         return HTMLResponse(
-            content="<h1>Test interface not found</h1>",
-            status_code=404
+            content="<h1>Test interface not found</h1>", status_code=404
         )
 
 
