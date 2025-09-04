@@ -567,6 +567,38 @@ Sarah: Yes, let's do weekly standups starting next Monday. Meeting adjourned.`;
                 </div>
                 
                 <div class="result-item">
+                    <div class="result-title">⚠️ Risks (${summary.risks ? summary.risks.length : 0})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.risks ? summary.risks.map(risk => `
+                                <li><strong>[${risk.category.toUpperCase()}] ${risk.risk}</strong><br>
+                                    Impact: ${risk.impact} | Likelihood: ${risk.likelihood}<br>
+                                    <em>Mitigation: ${risk.mitigation}</em>
+                                    ${risk.owner ? `<br>Owner: ${risk.owner}` : ''}
+                                </li>
+                            `).join('') : '<li>No risks identified</li>'}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <div class="result-title">📝 User Stories (${summary.user_stories ? summary.user_stories.length : 0})</div>
+                    <div class="result-content">
+                        <ul class="result-list">
+                            ${summary.user_stories ? summary.user_stories.map(story => `
+                                <li><strong>${story.story}</strong><br>
+                                    Priority: ${story.priority}
+                                    ${story.epic ? `<br>Epic: ${story.epic}` : ''}
+                                    ${story.acceptance_criteria && story.acceptance_criteria.length > 0 ? 
+                                        `<br><em>Criteria: ${story.acceptance_criteria.join(', ')}</em>` : ''}
+                                    ${story.business_value ? `<br><em>Value: ${story.business_value}</em>` : ''}
+                                </li>
+                            `).join('') : '<li>No user stories identified</li>'}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="result-item">
                     <div class="result-title">✅ Action Items (${summary.action_items.length})</div>
                     <div class="result-content">
                         <ul class="result-list">

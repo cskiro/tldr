@@ -19,8 +19,14 @@ from src.models.transcript import MeetingSummary
 from .base import SummarizationServiceBase
 from .prompts import (
     FALLBACK_EXTRACTION_PATTERNS,
-    MEETING_ANALYSIS_PROMPT,
+    MEETING_ANALYSIS_PROMPT_V2,
     SIMPLE_SUMMARY_PROMPT,
+)
+from .text_analysis_utils import (
+    extract_granular_topics_from_text,
+    extract_phased_actions_from_text,
+    extract_risks_from_text,
+    extract_user_stories_from_text,
 )
 
 
@@ -165,31 +171,46 @@ class OllamaService(SummarizationServiceBase):
                     },
                     "action_items": {
                         "type": "array",
+                        "minItems": 3,
                         "items": {
                             "type": "object",
                             "properties": {
-                                "task": {"type": "string"},
+                                "task": {"type": "string", "minLength": 10},
                                 "assignee": {"type": "string"},
                                 "due_date": {"type": ["string", "null"]},
                                 "priority": {
                                     "type": "string",
                                     "enum": ["high", "medium", "low"],
                                 },
-                                "context": {"type": "string"},
+                                "context": {"type": "string", "minLength": 5},
+                                "phase": {
+                                    "type": "string",
+                                    "enum": [
+                                        "immediate",
+                                        "development",
+                                        "testing",
+                                        "launch",
+                                    ],
+                                },
+                                "dependencies": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
                                 "status": {
                                     "type": "string",
                                     "enum": ["pending", "in_progress", "completed"],
                                 },
                             },
-                            "required": ["task", "assignee"],
+                            "required": ["task", "assignee", "context", "phase"],
                         },
                     },
                     "risks": {
                         "type": "array",
+                        "minItems": 5,
                         "items": {
                             "type": "object",
                             "properties": {
-                                "risk": {"type": "string"},
+                                "risk": {"type": "string", "minLength": 15},
                                 "impact": {
                                     "type": "string",
                                     "enum": ["high", "medium", "low"],
@@ -198,21 +219,33 @@ class OllamaService(SummarizationServiceBase):
                                     "type": "string",
                                     "enum": ["high", "medium", "low"],
                                 },
-                                "mitigation": {"type": "string"},
+                                "mitigation": {"type": "string", "minLength": 10},
                                 "owner": {"type": ["string", "null"]},
+                                "category": {
+                                    "type": "string",
+                                    "enum": ["technical", "security", "business"],
+                                },
                             },
-                            "required": ["risk"],
+                            "required": [
+                                "risk",
+                                "impact",
+                                "likelihood",
+                                "mitigation",
+                                "category",
+                            ],
                         },
                     },
                     "user_stories": {
                         "type": "array",
+                        "minItems": 5,
                         "items": {
                             "type": "object",
                             "properties": {
-                                "story": {"type": "string"},
+                                "story": {"type": "string", "minLength": 20},
                                 "acceptance_criteria": {
                                     "type": "array",
                                     "items": {"type": "string"},
+                                    "minItems": 1,
                                 },
                                 "priority": {
                                     "type": "string",
@@ -220,21 +253,35 @@ class OllamaService(SummarizationServiceBase):
                                 },
                                 "epic": {"type": ["string", "null"]},
                             },
-                            "required": ["story"],
+                            "required": ["story", "acceptance_criteria", "priority"],
                         },
                     },
-                    "next_steps": {"type": "array", "items": {"type": "string"}},
-                    "key_topics": {"type": "array", "items": {"type": "string"}},
+                    "next_steps": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 3,
+                    },
+                    "key_topics": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 8,
+                    },
                     "participants": {"type": "array", "items": {"type": "string"}},
                     "sentiment": {
                         "type": "string",
                         "enum": ["positive", "neutral", "negative", "mixed"],
                     },
                 },
-                "required": ["executive_summary", "action_items", "key_decisions"],
+                "required": [
+                    "executive_summary",
+                    "action_items",
+                    "key_decisions",
+                    "risks",
+                    "user_stories",
+                ],
             }
 
-            prompt = MEETING_ANALYSIS_PROMPT.format(transcript=transcript)
+            prompt = MEETING_ANALYSIS_PROMPT_V2.format(transcript=transcript)
             response_text = await self._generate_with_ollama(prompt, schema)
 
             # Try to parse JSON
@@ -261,15 +308,28 @@ class OllamaService(SummarizationServiceBase):
             simple_prompt = SIMPLE_SUMMARY_PROMPT.format(transcript=transcript)
             summary_text = await self._generate_with_ollama(simple_prompt)
 
-            # Extract structured data using regex patterns
+            # Extract structured data using enhanced regex patterns and new functions
+            enhanced_risks = extract_risks_from_text(transcript)
+            enhanced_user_stories = extract_user_stories_from_text(transcript)
+            enhanced_actions = extract_phased_actions_from_text(transcript)
+            enhanced_topics = extract_granular_topics_from_text(transcript)
+
             extracted_data = {
                 "executive_summary": self._extract_summary_from_text(summary_text),
-                "action_items": self._extract_action_items_regex(transcript),
+                "action_items": enhanced_actions
+                if enhanced_actions
+                else self._extract_action_items_regex(transcript),
                 "key_decisions": self._extract_decisions_regex(transcript),
-                "risks": self._extract_risks_regex(transcript),
-                "user_stories": self._extract_user_stories_regex(transcript),
+                "risks": enhanced_risks
+                if enhanced_risks
+                else self._extract_risks_regex(transcript),
+                "user_stories": enhanced_user_stories
+                if enhanced_user_stories
+                else self._extract_user_stories_regex(transcript),
                 "next_steps": self._extract_next_steps_regex(transcript),
-                "key_topics": self._extract_topics_regex(transcript),
+                "key_topics": enhanced_topics
+                if enhanced_topics
+                else self._extract_topics_regex(transcript),
                 "participants": self._extract_participants_regex(transcript),
                 "sentiment": "neutral",  # Default sentiment
             }

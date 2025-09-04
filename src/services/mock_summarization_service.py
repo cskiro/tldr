@@ -5,16 +5,24 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from src.core.logging import processing_logger, service_logger
 from src.models.action_item import ActionItem, ActionItemPriority, ActionItemStatus
 from src.models.decision import Decision, DecisionImpact, DecisionStatus
+from src.models.risk import Risk, RiskCategory, RiskImpact, RiskLikelihood
 from src.models.transcript import MeetingSummary
+from src.models.user_story import StoryPriority, UserStory
 
 from .base import SummarizationServiceBase
 from .text_analysis_utils import (
     extract_action_items_from_text,
     extract_decisions_from_text,
+    extract_granular_topics_from_text,
     extract_participants_from_transcript,
+    extract_phased_actions_from_text,
+    extract_risks_from_text,
+    extract_user_stories_from_text,
     generate_executive_summary,
     identify_key_topics_from_text,
 )
@@ -70,17 +78,34 @@ class MockSummarizationService(SummarizationServiceBase):
                 word_count=len(transcript_text.split()),
             )
 
-            # Extract all components in parallel
+            # Extract all components using enhanced functions
             participants = await self.extract_participants(transcript_text)
-            key_topics = await self.identify_key_topics(transcript_text)
+
+            # Use enhanced extraction functions for better quality
+            enhanced_key_topics = extract_granular_topics_from_text(transcript_text)
+            key_topics = (
+                enhanced_key_topics
+                if enhanced_key_topics
+                else await self.identify_key_topics(transcript_text)
+            )
+
+            enhanced_action_items = extract_phased_actions_from_text(transcript_text)
+            action_items_data = (
+                enhanced_action_items
+                if enhanced_action_items
+                else await self.extract_action_items(transcript_text)
+            )
+
+            # Extract risks and user stories (previously missing)
+            risks_data = extract_risks_from_text(transcript_text)
+            user_stories_data = extract_user_stories_from_text(transcript_text)
 
             # Generate executive summary
             summary_text = generate_executive_summary(
                 transcript_text, participants, key_topics
             )
 
-            # Extract structured data
-            action_items_data = await self.extract_action_items(transcript_text)
+            # Extract decisions
             decisions_data = await self.extract_decisions(transcript_text)
 
             # Convert to model instances
@@ -110,6 +135,44 @@ class MockSummarizationService(SummarizationServiceBase):
                 for decision in decisions_data
             ]
 
+            # Convert risks to model instances with validation
+            risks = []
+            for risk in risks_data:
+                try:
+                    mitigation_text = risk.get(
+                        "mitigation", "Risk mitigation strategy not specified"
+                    )
+                    # Ensure mitigation meets minimum length requirement
+                    if len(mitigation_text) < 5:
+                        mitigation_text = f"Risk mitigation strategy: {mitigation_text}"
+
+                    risk_obj = Risk(
+                        id=uuid4(),
+                        risk=risk["risk"],
+                        category=RiskCategory(risk.get("category", "technical")),
+                        impact=RiskImpact(risk.get("impact", "medium")),
+                        likelihood=RiskLikelihood(risk.get("likelihood", "medium")),
+                        mitigation=mitigation_text,
+                        owner=risk.get("owner"),
+                    )
+                    risks.append(risk_obj)
+                except (ValidationError, ValueError) as e:
+                    service_logger.warning(f"Invalid risk data: {e}")
+                    continue
+
+            # Convert user stories to model instances
+            user_stories = [
+                UserStory(
+                    id=uuid4(),
+                    story=story["story"],
+                    acceptance_criteria=story.get("acceptance_criteria", []),
+                    priority=StoryPriority(story.get("priority", "medium")),
+                    epic=story.get("epic"),
+                    business_value=story.get("business_value"),
+                )
+                for story in user_stories_data
+            ]
+
             # Identify next steps from action items
             next_steps = self._generate_next_steps(action_items, decisions)
 
@@ -118,7 +181,13 @@ class MockSummarizationService(SummarizationServiceBase):
 
             # Calculate confidence score based on extraction quality
             confidence_score = self._calculate_confidence_score(
-                transcript_text, participants, action_items, decisions, key_topics
+                transcript_text,
+                participants,
+                action_items,
+                decisions,
+                key_topics,
+                risks,
+                user_stories,
             )
 
             processing_time = time.time() - start_time
@@ -131,6 +200,8 @@ class MockSummarizationService(SummarizationServiceBase):
                 key_topics=key_topics[:20],  # Limit to top 20 topics
                 decisions=decisions,
                 action_items=action_items,
+                risks=risks,
+                user_stories=user_stories,
                 participants=participants,
                 sentiment=sentiment,
                 next_steps=next_steps,
@@ -145,6 +216,8 @@ class MockSummarizationService(SummarizationServiceBase):
                 participants_count=len(participants),
                 action_items_count=len(action_items),
                 decisions_count=len(decisions),
+                risks_count=len(risks),
+                user_stories_count=len(user_stories),
                 topics_count=len(key_topics),
                 confidence_score=confidence_score,
             )
@@ -155,6 +228,9 @@ class MockSummarizationService(SummarizationServiceBase):
                 participants_count=len(participants),
                 action_items_count=len(action_items),
                 decisions_count=len(decisions),
+                risks_count=len(risks),
+                user_stories_count=len(user_stories),
+                topics_count=len(key_topics),
                 confidence_score=round(confidence_score, 2),
             )
 
@@ -344,6 +420,8 @@ class MockSummarizationService(SummarizationServiceBase):
         action_items: list[ActionItem],
         decisions: list[Decision],
         key_topics: list[str],
+        risks: list[Risk],
+        user_stories: list[UserStory],
     ) -> float:
         """
         Calculate confidence score based on extraction quality indicators.
@@ -390,6 +468,22 @@ class MockSummarizationService(SummarizationServiceBase):
             score_factors.append(0.7)
         else:
             score_factors.append(0.5)
+
+        # Risk extraction success (enhanced feature)
+        if len(risks) > 3:
+            score_factors.append(0.9)  # Good risk identification
+        elif len(risks) > 0:
+            score_factors.append(0.7)
+        else:
+            score_factors.append(0.4)  # No risks identified
+
+        # User story extraction success (enhanced feature)
+        if len(user_stories) > 3:
+            score_factors.append(0.9)  # Good user story extraction
+        elif len(user_stories) > 0:
+            score_factors.append(0.7)
+        else:
+            score_factors.append(0.4)  # No user stories identified
 
         # Calculate weighted average (mock service gets lower confidence than real AI)
         base_confidence = sum(score_factors) / len(score_factors)
