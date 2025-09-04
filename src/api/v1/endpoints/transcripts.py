@@ -54,6 +54,8 @@ class ProcessingRequest(BaseModel):
 
     meeting_id: str
     options: dict[str, Any] | None = None
+    provider: str | None = None
+    api_key: str | None = None
 
 
 async def validate_audio_file(file: UploadFile) -> None:
@@ -391,7 +393,9 @@ async def process_transcript(
             meeting_id=meeting_id,
             meetings_storage=meetings_storage,
             processing_status_storage=processing_status_storage,
-            summaries_storage=summaries_storage,  # We need to add this storage
+            summaries_storage=summaries_storage,
+            provider=request.provider,
+            api_key=request.api_key,
         )
 
         processing_logger.log_processing_start(

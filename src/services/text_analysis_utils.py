@@ -281,6 +281,10 @@ def identify_key_topics_from_text(text: str) -> list[str]:
         if count >= 3 and word not in [p.lower() for p in topics]:
             topics.append(word.title())
 
+    # Ensure at least one topic is returned (validation requirement)
+    if not topics:
+        topics = ["General Discussion"]
+
     return topics[:10]  # Return top 10 topics
 
 

@@ -7,6 +7,8 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.api.routes import api_router
 from src.core.config import settings
@@ -103,6 +105,9 @@ app.add_exception_handler(Exception, global_exception_handler)
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="src/static"), name="static")
+
 
 @app.get("/")
 async def root() -> dict[str, Any]:
@@ -131,6 +136,18 @@ async def health_check() -> dict[str, str]:
         "service": "tldr-api",
         "message": "Use /api/v1/health for detailed health information",
     }
+
+
+@app.get("/test", response_class=HTMLResponse)
+async def test_interface():
+    """Serve the AI processing test interface."""
+    try:
+        with open("src/static/test.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(
+            content="<h1>Test interface not found</h1>", status_code=404
+        )
 
 
 if __name__ == "__main__":
