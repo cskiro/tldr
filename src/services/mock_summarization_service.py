@@ -242,9 +242,7 @@ class MockSummarizationService(SummarizationServiceBase):
         # Add high-priority action items as next steps
         high_priority_items = [
             item for item in action_items if item.priority == ActionItemPriority.HIGH
-        ][
-            :3
-        ]  # Limit to top 3
+        ][:3]  # Limit to top 3
 
         for item in high_priority_items:
             next_steps.append(f"{item.assignee}: {item.task}")
@@ -255,9 +253,7 @@ class MockSummarizationService(SummarizationServiceBase):
             for decision in decisions
             if decision.status == DecisionStatus.APPROVED
             and decision.impact in [DecisionImpact.HIGH, DecisionImpact.MEDIUM]
-        ][
-            :2
-        ]  # Limit to top 2
+        ][:2]  # Limit to top 2
 
         for decision in approved_decisions:
             next_steps.append(f"Follow up on: {decision.decision}")
