@@ -17,18 +17,18 @@ def sample_transcript():
     """Sample transcript for testing."""
     return """
     John: Good morning everyone. Let's start with the quarterly review.
-    
+
     Sarah: Thanks John. Our revenue is up 15% from last quarter.
     We need to focus on customer retention this quarter.
-    
+
     Mike: I'll take the lead on the retention project.
     We should have a proposal ready by Friday.
-    
+
     John: Great. Let's also discuss the new product launch.
     Sarah, can you coordinate with marketing?
-    
+
     Sarah: Absolutely. I'll set up a meeting with the marketing team this week.
-    
+
     John: Perfect. Any other business? No? Meeting adjourned.
     """
 

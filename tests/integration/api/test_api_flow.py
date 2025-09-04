@@ -22,35 +22,35 @@ def sample_meeting_transcript():
         "meeting_id": "integration_test_meeting_2025_01_15",
         "raw_text": """
         Alice Johnson: Good morning everyone, welcome to our Q1 planning meeting.
-        
+
         Bob Smith: Thanks Alice. I've prepared the technical roadmap for review.
-        
+
         Alice Johnson: Excellent. Let's start with the key decisions we need to make today.
-        
+
         Carol Davis: I think we should decide on the frontend framework. I recommend React.
-        
+
         Bob Smith: I agree with React. Our team has strong expertise there and it integrates well with our backend.
-        
+
         Alice Johnson: Great, so we're decided on React for the frontend. Carol, can you lead the implementation?
-        
+
         Carol Davis: Absolutely. I'll need about two weeks to set up the initial structure.
-        
+
         Bob Smith: I can help with the API integration layer. Should be ready by the end of the month.
-        
+
         Alice Johnson: Perfect. Let's also discuss the timeline for the user authentication module.
-        
+
         Carol Davis: That's a critical piece. I suggest we prioritize it right after the basic framework setup.
-        
+
         Bob Smith: I'll handle the backend authentication. Let's target completion by February 15th.
-        
+
         Alice Johnson: Excellent. Any other decisions or action items we need to capture?
-        
+
         Carol Davis: We should schedule a follow-up meeting next week to review progress.
-        
+
         Alice Johnson: Good point. Let's meet next Friday at the same time.
-        
+
         Bob Smith: Sounds good. I'll send out calendar invites.
-        
+
         Alice Johnson: Thanks everyone. Great meeting, we have clear next steps.
         """,
         "participants": ["Alice Johnson", "Carol Davis", "Bob Smith"],
