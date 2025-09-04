@@ -1,12 +1,13 @@
 """Comprehensive tests for Decision model."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timezone, timedelta
 
 from src.models.decision import (
     Decision,
-    DecisionStatus,
     DecisionImpact,
+    DecisionStatus,
     DecisionUpdate,
 )
 
@@ -27,12 +28,12 @@ class TestDecision:
     @pytest.fixture
     def future_date(self):
         """Fixture providing a future date."""
-        return datetime.now(timezone.utc) + timedelta(days=30)
+        return datetime.now(UTC) + timedelta(days=30)
 
     def test_should_create_decision_with_valid_data(self, valid_decision_data):
         """Test creating Decision with valid data."""
         decision = Decision(**valid_decision_data)
-        
+
         assert decision.decision == valid_decision_data["decision"]
         assert decision.made_by == valid_decision_data["made_by"]
         assert decision.rationale == valid_decision_data["rationale"]
@@ -48,16 +49,16 @@ class TestDecision:
         """Test that each Decision gets a unique ID."""
         decision1 = Decision(**valid_decision_data)
         decision2 = Decision(**valid_decision_data)
-        
+
         assert decision1.id != decision2.id
         assert str(decision1.id)  # Should be valid UUID string
 
     def test_should_set_automatic_timestamp(self, valid_decision_data):
         """Test that timestamp is automatically set."""
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         decision = Decision(**valid_decision_data)
-        after = datetime.now(timezone.utc)
-        
+        after = datetime.now(UTC)
+
         assert before <= decision.timestamp <= after
         assert before <= decision.created_at <= after
 
@@ -66,12 +67,12 @@ class TestDecision:
         # Too short
         with pytest.raises(ValueError, match="at least 5 characters"):
             Decision(**{**valid_decision_data, "decision": "hi"})
-        
+
         # Too long
         long_decision = "x" * 1001
         with pytest.raises(ValueError, match="at most 1000 characters"):
             Decision(**{**valid_decision_data, "decision": long_decision})
-        
+
         # Valid length
         valid_decision = "We will use TypeScript for better type safety"
         decision = Decision(**{**valid_decision_data, "decision": valid_decision})
@@ -82,11 +83,11 @@ class TestDecision:
         # Empty name
         with pytest.raises(ValueError, match="Decision maker cannot be empty"):
             Decision(**{**valid_decision_data, "made_by": ""})
-        
+
         # Invalid characters
         with pytest.raises(ValueError, match="invalid characters"):
             Decision(**{**valid_decision_data, "made_by": "Alice@Johnson"})
-        
+
         # Valid formats
         valid_names = [
             "Alice Johnson",
@@ -94,7 +95,7 @@ class TestDecision:
             "Dr. Sarah Chen",
             "Mary-Jane Smith (Product Lead)",
         ]
-        
+
         for name in valid_names:
             decision = Decision(**{**valid_decision_data, "made_by": name})
             assert decision.made_by == name
@@ -104,7 +105,7 @@ class TestDecision:
         # Too short
         with pytest.raises(ValueError, match="at least 5 characters"):
             Decision(**{**valid_decision_data, "rationale": "ok"})
-        
+
         # Too long
         long_rationale = "x" * 2001
         with pytest.raises(ValueError, match="at most 2000 characters"):
@@ -112,14 +113,14 @@ class TestDecision:
 
     def test_should_validate_future_dates(self, valid_decision_data):
         """Test that implementation and review dates cannot be in the past."""
-        past_date = datetime.now(timezone.utc) - timedelta(days=1)
-        
+        past_date = datetime.now(UTC) - timedelta(days=1)
+
         with pytest.raises(ValueError, match="cannot be in the past"):
             Decision(**{
                 **valid_decision_data,
                 "implementation_date": past_date
             })
-        
+
         with pytest.raises(ValueError, match="cannot be in the past"):
             Decision(**{
                 **valid_decision_data,
@@ -133,7 +134,7 @@ class TestDecision:
             "implementation_date": future_date,
             "review_date": future_date + timedelta(days=30)
         })
-        
+
         assert decision.implementation_date == future_date
         assert decision.review_date == future_date + timedelta(days=30)
 
@@ -146,7 +147,7 @@ class TestDecision:
             "tags": ["tech", "  FRONTEND  ", "tech", "ui"],
             "dependencies": ["Training", "  SETUP  ", "training"]
         })
-        
+
         # Should be cleaned: trimmed, deduplicated, min length 2
         assert decision.affected_teams == ["Frontend Team", "BACKEND", "QA"]
         assert decision.alternatives_considered == ["Vue.js", "Angular"]
@@ -158,11 +159,11 @@ class TestDecision:
         # Too low
         with pytest.raises(ValueError, match="greater than or equal to 0"):
             Decision(**{**valid_decision_data, "confidence_level": -0.1})
-        
+
         # Too high
         with pytest.raises(ValueError, match="less than or equal to 1"):
             Decision(**{**valid_decision_data, "confidence_level": 1.1})
-        
+
         # Valid values
         for level in [0.0, 0.5, 1.0]:
             decision = Decision(**{**valid_decision_data, "confidence_level": level})
@@ -171,11 +172,11 @@ class TestDecision:
     def test_should_mark_implemented_correctly(self, valid_decision_data):
         """Test marking decision as implemented."""
         decision = Decision(**valid_decision_data)
-        
-        before = datetime.now(timezone.utc)
+
+        before = datetime.now(UTC)
         decision.mark_implemented()
-        after = datetime.now(timezone.utc)
-        
+        after = datetime.now(UTC)
+
         assert decision.status == DecisionStatus.IMPLEMENTED
         assert before <= decision.implementation_date <= after
         assert decision.updated_at is not None
@@ -186,48 +187,48 @@ class TestDecision:
             **valid_decision_data,
             "implementation_date": future_date
         })
-        
+
         decision.mark_implemented()
-        
+
         assert decision.status == DecisionStatus.IMPLEMENTED
         assert decision.implementation_date == future_date
 
     def test_should_mark_deferred_correctly(self, valid_decision_data, future_date):
         """Test marking decision as deferred."""
         decision = Decision(**valid_decision_data)
-        
+
         decision.mark_deferred(future_date)
-        
+
         assert decision.status == DecisionStatus.DEFERRED
         assert decision.review_date == future_date
         assert decision.updated_at is not None
 
     def test_should_mark_deferred_without_new_date(self, valid_decision_data):
         """Test marking decision as deferred without changing review date."""
-        original_review = datetime.now(timezone.utc) + timedelta(days=10)
+        original_review = datetime.now(UTC) + timedelta(days=10)
         decision = Decision(**{
             **valid_decision_data,
             "review_date": original_review
         })
-        
+
         decision.mark_deferred()
-        
+
         assert decision.status == DecisionStatus.DEFERRED
         assert decision.review_date == original_review
 
     def test_should_detect_due_for_review(self, valid_decision_data):
         """Test due for review detection."""
         # Past review date
-        past_date = datetime.now(timezone.utc) - timedelta(hours=1)
+        past_date = datetime.now(UTC) - timedelta(hours=1)
         past_review = Decision(**valid_decision_data)
         past_review.review_date = past_date  # Set after creation
         assert past_review.is_due_for_review() is True
-        
+
         # Future review date
-        future_date = datetime.now(timezone.utc) + timedelta(days=1)
+        future_date = datetime.now(UTC) + timedelta(days=1)
         future_review = Decision(**{**valid_decision_data, "review_date": future_date})
         assert future_review.is_due_for_review() is False
-        
+
         # No review date
         no_review = Decision(**valid_decision_data)
         assert no_review.is_due_for_review() is False
@@ -235,19 +236,19 @@ class TestDecision:
     def test_should_calculate_days_until_implementation(self, valid_decision_data):
         """Test days until implementation calculation."""
         # Future date
-        future_date = datetime.now(timezone.utc) + timedelta(days=10)
+        future_date = datetime.now(UTC) + timedelta(days=10)
         future_impl = Decision(**{
             **valid_decision_data,
             "implementation_date": future_date
         })
         assert future_impl.days_until_implementation() == 10
-        
+
         # Past date (negative days)
-        past_date = datetime.now(timezone.utc) - timedelta(days=5)
+        past_date = datetime.now(UTC) - timedelta(days=5)
         past_impl = Decision(**valid_decision_data)
         past_impl.implementation_date = past_date
         assert past_impl.days_until_implementation() == -5
-        
+
         # No implementation date
         no_impl = Decision(**valid_decision_data)
         assert no_impl.days_until_implementation() is None
@@ -258,7 +259,7 @@ class TestDecision:
         for status in DecisionStatus:
             decision = Decision(**{**valid_decision_data, "status": status})
             assert decision.status == status
-        
+
         # Test all impact values
         for impact in DecisionImpact:
             decision = Decision(**{**valid_decision_data, "impact": impact})
@@ -274,9 +275,9 @@ class TestDecision:
             "tags": ["tech", "frontend"],
             "confidence_level": 0.8
         })
-        
+
         data = decision.model_dump()
-        
+
         # Check key fields are present
         assert data["decision"] == valid_decision_data["decision"]
         assert data["made_by"] == valid_decision_data["made_by"]
@@ -301,7 +302,7 @@ class TestDecisionUpdate:
             decision="Updated decision text",
             impact=DecisionImpact.CRITICAL
         )
-        
+
         assert update.decision == "Updated decision text"
         assert update.impact == DecisionImpact.CRITICAL
         assert update.rationale is None  # Not provided
@@ -312,11 +313,11 @@ class TestDecisionUpdate:
         # Invalid decision length
         with pytest.raises(ValueError, match="at least 5 characters"):
             DecisionUpdate(decision="hi")
-        
+
         # Invalid rationale length
         with pytest.raises(ValueError, match="at least 5 characters"):
             DecisionUpdate(rationale="ok")
-        
+
         # Invalid confidence level
         with pytest.raises(ValueError, match="greater than or equal to 0"):
             DecisionUpdate(confidence_level=-0.1)
@@ -324,7 +325,7 @@ class TestDecisionUpdate:
     def test_should_allow_all_none_values(self):
         """Test that update can have all None values."""
         update = DecisionUpdate()
-        
+
         assert update.decision is None
         assert update.rationale is None
         assert update.status is None
@@ -333,8 +334,8 @@ class TestDecisionUpdate:
 
     def test_should_serialize_correctly(self):
         """Test DecisionUpdate serialization."""
-        future_date = datetime.now(timezone.utc) + timedelta(days=14)
-        
+        future_date = datetime.now(UTC) + timedelta(days=14)
+
         update = DecisionUpdate(
             decision="New decision text",
             status=DecisionStatus.DEFERRED,
@@ -342,9 +343,9 @@ class TestDecisionUpdate:
             tags=["updated", "test"],
             confidence_level=0.9
         )
-        
+
         data = update.model_dump()
-        
+
         assert data["decision"] == "New decision text"
         assert data["status"] == "deferred"
         assert data["rationale"] is None

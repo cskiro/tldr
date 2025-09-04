@@ -1,18 +1,19 @@
 """Comprehensive tests for transcript models."""
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from src.models.transcript import (
-    TranscriptInput,
-    MeetingSummary,
-    ProcessingStatus,
-    TranscriptStatus,
-    MeetingType,
-)
+import pytest
+
 from src.models.action_item import ActionItem, ActionItemStatus
 from src.models.decision import Decision
+from src.models.transcript import (
+    MeetingSummary,
+    MeetingType,
+    ProcessingStatus,
+    TranscriptInput,
+    TranscriptStatus,
+)
 
 
 class TestTranscriptInput:
@@ -32,7 +33,7 @@ class TestTranscriptInput:
     def test_should_create_transcript_with_valid_data(self, valid_transcript_data):
         """Test creating TranscriptInput with valid data."""
         transcript = TranscriptInput(**valid_transcript_data)
-        
+
         assert transcript.meeting_id == valid_transcript_data["meeting_id"]
         assert transcript.raw_text == valid_transcript_data["raw_text"]
         assert transcript.participants == valid_transcript_data["participants"]
@@ -43,20 +44,20 @@ class TestTranscriptInput:
 
     def test_should_set_automatic_meeting_date(self, valid_transcript_data):
         """Test that meeting_date is automatically set."""
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         transcript = TranscriptInput(**valid_transcript_data)
-        after = datetime.now(timezone.utc)
-        
+        after = datetime.now(UTC)
+
         assert before <= transcript.meeting_date <= after
 
     def test_should_accept_custom_meeting_date(self, valid_transcript_data):
         """Test that custom meeting_date can be provided."""
-        custom_date = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        custom_date = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
         transcript = TranscriptInput(**{
             **valid_transcript_data,
             "meeting_date": custom_date
         })
-        
+
         assert transcript.meeting_date == custom_date
 
     def test_should_validate_meeting_id_format(self, valid_transcript_data):
@@ -67,16 +68,16 @@ class TestTranscriptInput:
                 **valid_transcript_data,
                 "meeting_id": "meeting@with#special$chars"
             })
-        
+
         # Too short
         with pytest.raises(ValueError, match="at least 1 characters"):
             TranscriptInput(**{**valid_transcript_data, "meeting_id": ""})
-        
+
         # Too long
         long_id = "x" * 101
         with pytest.raises(ValueError, match="at most 100 characters"):
             TranscriptInput(**{**valid_transcript_data, "meeting_id": long_id})
-        
+
         # Valid formats
         valid_ids = [
             "meeting-123",
@@ -84,7 +85,7 @@ class TestTranscriptInput:
             "call_2025-01-15",
             "MEETING123",
         ]
-        
+
         for meeting_id in valid_ids:
             transcript = TranscriptInput(**{
                 **valid_transcript_data,
@@ -97,7 +98,7 @@ class TestTranscriptInput:
         # Too short
         with pytest.raises(ValueError, match="at least 10 characters"):
             TranscriptInput(**{**valid_transcript_data, "raw_text": "Hi there"})
-        
+
         # Too long
         long_text = "x" * 100001
         with pytest.raises(ValueError, match="at most 100000 characters"):
@@ -112,7 +113,7 @@ class TestTranscriptInput:
                 "audio_url": "not-a-valid-url",
                 "raw_text": None
             })
-        
+
         # Valid URLs
         valid_urls = [
             "https://example.com/meeting.mp3",
@@ -120,7 +121,7 @@ class TestTranscriptInput:
             "https://cdn.com/recording.m4a",
             "https://bucket.s3.com/file.mp4",
         ]
-        
+
         for url in valid_urls:
             transcript = TranscriptInput(**{
                 **valid_transcript_data,
@@ -143,7 +144,7 @@ class TestTranscriptInput:
         # Empty list
         with pytest.raises(ValueError, match="At least one participant is required"):
             TranscriptInput(**{**valid_transcript_data, "participants": []})
-        
+
         # Too many participants
         too_many = [f"Person {i}" for i in range(51)]
         with pytest.raises(ValueError, match="at most 50 items"):
@@ -159,12 +160,12 @@ class TestTranscriptInput:
             "Bob Wilson",
             "   ",  # Whitespace only
         ]
-        
+
         transcript = TranscriptInput(**{
             **valid_transcript_data,
             "participants": messy_participants
         })
-        
+
         # Should be cleaned: trimmed, deduplicated (case-insensitive), empty removed
         expected = ["John Smith", "ALICE JOHNSON", "Bob Wilson"]
         assert transcript.participants == expected
@@ -174,11 +175,11 @@ class TestTranscriptInput:
         # Too short
         with pytest.raises(ValueError, match="greater than 0"):
             TranscriptInput(**{**valid_transcript_data, "duration_minutes": 0})
-        
+
         # Too long (over 8 hours)
         with pytest.raises(ValueError, match="less than or equal to 480"):
             TranscriptInput(**{**valid_transcript_data, "duration_minutes": 481})
-        
+
         # Valid durations
         for duration in [1, 60, 240, 480]:
             transcript = TranscriptInput(**{
@@ -202,9 +203,9 @@ class TestTranscriptInput:
             **valid_transcript_data,
             "metadata": {"platform": "zoom", "recording_id": "123456"}
         })
-        
+
         data = transcript.model_dump()
-        
+
         # Check key fields are present
         assert data["meeting_id"] == valid_transcript_data["meeting_id"]
         assert data["raw_text"] == valid_transcript_data["raw_text"]
@@ -253,7 +254,7 @@ class TestMeetingSummary:
     def test_should_create_summary_with_valid_data(self, valid_summary_data):
         """Test creating MeetingSummary with valid data."""
         summary = MeetingSummary(**valid_summary_data)
-        
+
         assert summary.meeting_id == valid_summary_data["meeting_id"]
         assert summary.summary == valid_summary_data["summary"]
         assert summary.key_topics == valid_summary_data["key_topics"]
@@ -269,7 +270,7 @@ class TestMeetingSummary:
         """Test that each MeetingSummary gets a unique ID."""
         summary1 = MeetingSummary(**valid_summary_data)
         summary2 = MeetingSummary(**valid_summary_data)
-        
+
         assert summary1.id != summary2.id
         assert isinstance(summary1.id, UUID)
 
@@ -278,7 +279,7 @@ class TestMeetingSummary:
         # Too short
         with pytest.raises(ValueError, match="at least 10 characters"):
             MeetingSummary(**{**valid_summary_data, "summary": "Short"})
-        
+
         # Too long
         long_summary = "x" * 5001
         with pytest.raises(ValueError, match="at most 5000 characters"):
@@ -289,7 +290,7 @@ class TestMeetingSummary:
         # Too few topics
         with pytest.raises(ValueError, match="at least 1 items"):
             MeetingSummary(**{**valid_summary_data, "key_topics": []})
-        
+
         # Too many topics
         too_many = [f"Topic {i}" for i in range(21)]
         with pytest.raises(ValueError, match="at most 20 items"):
@@ -300,7 +301,7 @@ class TestMeetingSummary:
         # Invalid sentiment
         with pytest.raises(ValueError, match="String should match pattern"):
             MeetingSummary(**{**valid_summary_data, "sentiment": "excited"})
-        
+
         # Valid sentiments
         for sentiment in ["positive", "neutral", "negative"]:
             summary = MeetingSummary(**{**valid_summary_data, "sentiment": sentiment})
@@ -311,11 +312,11 @@ class TestMeetingSummary:
         # Too low
         with pytest.raises(ValueError, match="greater than or equal to 0"):
             MeetingSummary(**{**valid_summary_data, "confidence_score": -0.1})
-        
+
         # Too high
         with pytest.raises(ValueError, match="less than or equal to 1"):
             MeetingSummary(**{**valid_summary_data, "confidence_score": 1.1})
-        
+
         # Valid scores
         for score in [0.0, 0.5, 1.0]:
             summary = MeetingSummary(**{**valid_summary_data, "confidence_score": score})
@@ -326,7 +327,7 @@ class TestMeetingSummary:
         # Negative time
         with pytest.raises(ValueError, match="greater than or equal to 0"):
             MeetingSummary(**{**valid_summary_data, "processing_time_seconds": -1.0})
-        
+
         # Valid times
         for time_val in [0.0, 5.5, 120.0]:
             summary = MeetingSummary(**{**valid_summary_data, "processing_time_seconds": time_val})
@@ -335,10 +336,10 @@ class TestMeetingSummary:
     def test_should_compute_total_items(self, valid_summary_data):
         """Test total_items computed field."""
         summary = MeetingSummary(**valid_summary_data)
-        
+
         # 1 action item + 1 decision = 2 total items
         assert summary.total_items == 2
-        
+
         # Test with no items
         summary_empty = MeetingSummary(**{
             **valid_summary_data,
@@ -355,11 +356,11 @@ class TestMeetingSummary:
             "action_items": []
         })
         assert summary_no_items.completion_percentage == 100.0
-        
+
         # Test with pending action item
         summary_pending = MeetingSummary(**valid_summary_data)
         assert summary_pending.completion_percentage == 0.0
-        
+
         # Test with completed action item
         completed_item = ActionItem(
             task="Completed task",
@@ -387,7 +388,7 @@ class TestProcessingStatus:
     def test_should_create_status_with_valid_data(self, valid_status_data):
         """Test creating ProcessingStatus with valid data."""
         status = ProcessingStatus(**valid_status_data)
-        
+
         assert status.meeting_id == valid_status_data["meeting_id"]
         assert status.status == TranscriptStatus.UPLOADED
         assert status.progress_percentage == 0  # default
@@ -399,11 +400,11 @@ class TestProcessingStatus:
         # Too low
         with pytest.raises(ValueError, match="greater than or equal to 0"):
             ProcessingStatus(**{**valid_status_data, "progress_percentage": -1})
-        
+
         # Too high
         with pytest.raises(ValueError, match="less than or equal to 100"):
             ProcessingStatus(**{**valid_status_data, "progress_percentage": 101})
-        
+
         # Valid percentages
         for percentage in [0, 50, 100]:
             status = ProcessingStatus(**{
@@ -415,15 +416,15 @@ class TestProcessingStatus:
     def test_should_mark_processing_correctly(self, valid_status_data):
         """Test mark_processing method."""
         status = ProcessingStatus(**valid_status_data)
-        
-        before = datetime.now(timezone.utc)
+
+        before = datetime.now(UTC)
         status.mark_processing(estimated_seconds=120)
-        after = datetime.now(timezone.utc)
-        
+        after = datetime.now(UTC)
+
         assert status.status == TranscriptStatus.PROCESSING
         assert status.updated_at is not None
         assert before <= status.updated_at <= after
-        
+
         # Check estimated completion time
         expected_completion = before + timedelta(seconds=120)
         assert status.estimated_completion >= expected_completion
@@ -431,9 +432,9 @@ class TestProcessingStatus:
     def test_should_mark_completed_correctly(self, valid_status_data):
         """Test mark_completed method."""
         status = ProcessingStatus(**valid_status_data)
-        
+
         status.mark_completed()
-        
+
         assert status.status == TranscriptStatus.COMPLETED
         assert status.progress_percentage == 100
         assert status.updated_at is not None
@@ -442,9 +443,9 @@ class TestProcessingStatus:
         """Test mark_failed method."""
         status = ProcessingStatus(**valid_status_data)
         error_msg = "Transcription service unavailable"
-        
+
         status.mark_failed(error_msg)
-        
+
         assert status.status == TranscriptStatus.FAILED
         assert status.error_message == error_msg
         assert status.updated_at is not None
@@ -465,9 +466,9 @@ class TestProcessingStatus:
             "progress_percentage": 75,
             "error_message": "Partial failure"
         })
-        
+
         data = status.model_dump()
-        
+
         assert data["meeting_id"] == valid_status_data["meeting_id"]
         assert data["status"] == "uploaded"  # Enum value
         assert data["progress_percentage"] == 75

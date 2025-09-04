@@ -2,17 +2,25 @@
 
 from fastapi import APIRouter
 
+from src.api.v1.endpoints import health, summaries, transcripts
+
 # Create main API router
 api_router = APIRouter()
 
-# Import and include sub-routers (will be created later)
-# from src.transcription.routes import router as transcription_router
-# from src.summarization.routes import router as summarization_router
-
-# api_router.include_router(transcription_router, prefix="/transcripts", tags=["transcription"])
-# api_router.include_router(summarization_router, prefix="/summaries", tags=["summarization"])
+# Include v1 endpoint routers
+api_router.include_router(health.router, prefix="/health", tags=["health"])
+api_router.include_router(transcripts.router, prefix="/transcripts", tags=["transcripts"])
+api_router.include_router(summaries.router, prefix="/summaries", tags=["summaries"])
 
 @api_router.get("/")
 async def api_root():
     """API root endpoint."""
-    return {"message": "TLDR API v1"}
+    return {
+        "message": "TLDR API v1",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/api/v1/health",
+            "transcripts": "/api/v1/transcripts",
+            "summaries": "/api/v1/summaries"
+        }
+    }
