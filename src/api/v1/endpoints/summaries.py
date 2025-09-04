@@ -9,6 +9,12 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
+# Import from transcripts module for shared storage
+from src.api.v1.endpoints.transcripts import (
+    meetings_storage,
+    processing_status_storage,
+    summaries_storage,
+)
 from src.core.exceptions import MeetingNotFoundError, ProcessingError, ValidationError
 from src.core.logging import api_logger
 from src.models.action_item import ActionItem, ActionItemPriority, ActionItemStatus
@@ -17,13 +23,6 @@ from src.models.decision import Decision, DecisionImpact, DecisionStatus
 from src.models.transcript import MeetingSummary, TranscriptStatus
 
 router = APIRouter()
-
-# In-memory storage for demo purposes
-# TODO: Replace with actual database
-summaries_storage: dict[str, MeetingSummary] = {}
-
-# Import from transcripts module for status checking
-from src.api.v1.endpoints.transcripts import meetings_storage, processing_status_storage
 
 
 class ExportRequest(BaseModel):
@@ -43,7 +42,7 @@ class BulkExportRequest(BaseModel):
 def create_sample_summary(meeting_id: str) -> MeetingSummary:
     """
     Create a sample summary for demonstration purposes.
-    
+
     TODO: Replace with actual AI-generated summary
     """
     return MeetingSummary(
@@ -113,17 +112,16 @@ def create_sample_summary(meeting_id: str) -> MeetingSummary:
 def format_summary_as_markdown(summary: MeetingSummary, options: dict[str, Any] = None) -> str:
     """
     Format a meeting summary as Markdown.
-    
+
     Args:
         summary: Meeting summary to format
         options: Formatting options
-        
+
     Returns:
         Markdown-formatted summary
     """
     options = options or {}
     include_timestamps = options.get("include_timestamps", True)
-    group_by_participant = options.get("group_by_participant", False)
     include_sentiment = options.get("include_sentiment", True)
 
     # Header
@@ -236,7 +234,7 @@ async def get_summary(
 ):
     """
     Retrieve a completed meeting summary.
-    
+
     Returns the processed summary including action items, decisions,
     and key topics. If processing is still in progress, returns
     the current processing status instead.
@@ -276,11 +274,13 @@ async def get_summary(
                 details=processing_status.error_message or "Processing failed"
             )
 
-        # Get or create summary (for demo, create if doesn't exist)
+        # Get the processed summary from storage
         if meeting_id not in summaries_storage:
-            # TODO: Get actual summary from database
-            # For demo, create a sample summary
-            summaries_storage[meeting_id] = create_sample_summary(meeting_id)
+            raise ProcessingError(
+                meeting_id=meeting_id,
+                stage="summary_retrieval",
+                details="Summary not found. Ensure meeting has been processed successfully."
+            )
 
         summary = summaries_storage[meeting_id]
 
@@ -342,7 +342,7 @@ async def list_summaries(
 ):
     """
     List meeting summaries with pagination and filtering.
-    
+
     Supports filtering by date range and sorting by various fields.
     Returns paginated results with total count information.
     """
@@ -422,7 +422,7 @@ async def list_summaries(
 async def export_summary(request: ExportRequest):
     """
     Export a meeting summary in the specified format.
-    
+
     Supported formats:
     - json: Returns the summary as JSON
     - markdown: Returns the summary formatted as Markdown
@@ -501,7 +501,7 @@ async def export_summary(request: ExportRequest):
 async def bulk_export_summaries(request: BulkExportRequest):
     """
     Export multiple meeting summaries as a ZIP archive.
-    
+
     Creates individual files for each summary in the requested format
     and packages them into a downloadable ZIP file.
     """

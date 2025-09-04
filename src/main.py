@@ -41,17 +41,17 @@ app = FastAPI(
     title="TLDR - AI Meeting Summarization Tool",
     description="""
     Transform meeting transcripts into actionable summaries with AI.
-    
+
     ## Features
-    
+
     * **Upload Transcripts**: Support for text and audio file uploads
     * **AI Processing**: Extract action items, decisions, and key topics
     * **Multiple Formats**: Export summaries as JSON, Markdown, or PDF
     * **Real-time Status**: Track processing progress
     * **Bulk Operations**: Process multiple meetings at once
-    
+
     ## Quick Start
-    
+
     1. Upload a transcript using `/api/v1/transcripts/upload`
     2. Start processing with `/api/v1/transcripts/process`
     3. Check status with `/api/v1/transcripts/{meeting_id}/status`

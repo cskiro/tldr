@@ -36,7 +36,7 @@ class LivenessResponse(BaseModel):
 
 async def check_database_connection() -> bool:
     """Check database connectivity.
-    
+
     TODO: Implement actual database connection check.
     For now, this is a placeholder that returns True.
     """
@@ -46,7 +46,7 @@ async def check_database_connection() -> bool:
 
 async def is_application_initialized() -> bool:
     """Check if application is fully initialized.
-    
+
     TODO: Implement actual initialization check.
     For now, this is a placeholder that returns True.
     """
@@ -58,13 +58,13 @@ async def is_application_initialized() -> bool:
 async def health_check():
     """
     Comprehensive health check endpoint.
-    
+
     Returns detailed health information including:
     - Overall system status
     - Individual component checks
     - System uptime and version info
     - Timestamp for debugging
-    
+
     Returns 200 for healthy, 503 for degraded/unhealthy.
     """
     current_time = datetime.now(UTC)
@@ -109,10 +109,10 @@ async def health_check():
 async def readiness_probe():
     """
     Kubernetes readiness probe endpoint.
-    
+
     Checks if the application is ready to receive traffic.
     Returns 200 when ready, 503 when not ready.
-    
+
     This is used by Kubernetes to determine when to start
     routing traffic to the pod.
     """
@@ -151,10 +151,10 @@ async def readiness_probe():
 async def liveness_probe():
     """
     Kubernetes liveness probe endpoint.
-    
+
     Lightweight endpoint that simply confirms the application
     process is running and responsive.
-    
+
     This should be as fast and lightweight as possible.
     Used by Kubernetes to determine if the pod should be restarted.
     """
@@ -165,7 +165,7 @@ async def liveness_probe():
 async def health_root():
     """
     Root health endpoint that redirects to main health check.
-    
+
     Provides a simple way to check if the health endpoints are working.
     """
     return APIResponse.success_response(

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 import aiofiles
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
 from pydantic import BaseModel, ValidationError
 
 from src.core.exceptions import (
@@ -24,6 +24,7 @@ from src.models.transcript import (
     TranscriptInput,
     TranscriptStatus,
 )
+from src.services.processing_service import process_meeting_background
 
 router = APIRouter()
 
@@ -39,6 +40,7 @@ UPLOAD_DIR = "uploads"
 # TODO: Replace with actual database
 meetings_storage: dict[str, dict[str, Any]] = {}
 processing_status_storage: dict[str, ProcessingStatus] = {}
+summaries_storage: dict[str, Any] = {}  # Store generated summaries
 
 
 class ProcessingRequest(BaseModel):
@@ -50,10 +52,10 @@ class ProcessingRequest(BaseModel):
 async def validate_audio_file(file: UploadFile) -> None:
     """
     Validate uploaded audio file.
-    
+
     Args:
         file: Uploaded file object
-        
+
     Raises:
         FileTooLargeError: If file exceeds size limit
         UnsupportedFormatError: If file format is not supported
@@ -73,14 +75,14 @@ async def validate_audio_file(file: UploadFile) -> None:
 async def save_uploaded_file(file: UploadFile, meeting_id: str) -> str:
     """
     Save uploaded file to disk.
-    
+
     Args:
         file: Uploaded file object
         meeting_id: Meeting identifier for filename
-        
+
     Returns:
         Path to saved file
-        
+
     Raises:
         ProcessingError: If file save fails
     """
@@ -131,12 +133,12 @@ async def upload_transcript(
 ):
     """
     Upload a meeting transcript or audio file for processing.
-    
+
     This endpoint accepts either:
     1. Raw transcript text directly
     2. Audio file for transcription
     3. Both text and audio file
-    
+
     The transcript data is validated and stored for later processing.
     """
     try:
@@ -266,10 +268,10 @@ async def upload_transcript(
 
 
 @router.post("/process", response_model=APIResponse)
-async def process_transcript(request: ProcessingRequest):
+async def process_transcript(request: ProcessingRequest, background_tasks: BackgroundTasks):
     """
     Start processing a previously uploaded transcript.
-    
+
     This endpoint triggers the AI processing pipeline which includes:
     1. Transcription (if audio file was provided)
     2. Text analysis and summarization
@@ -334,8 +336,15 @@ async def process_transcript(request: ProcessingRequest):
         processing_status.mark_processing(estimated_seconds=estimated_seconds)
         processing_status_storage[meeting_id] = processing_status
 
-        # TODO: Start actual async processing task
-        # For now, we'll simulate processing
+        # Start actual async processing task in background
+        background_tasks.add_task(
+            process_meeting_background,
+            meeting_id=meeting_id,
+            meetings_storage=meetings_storage,
+            processing_status_storage=processing_status_storage,
+            summaries_storage=summaries_storage  # We need to add this storage
+        )
+
         processing_logger.log_processing_start(
             meeting_id=meeting_id,
             processing_type="transcript_analysis",
@@ -378,7 +387,7 @@ async def process_transcript(request: ProcessingRequest):
 async def get_processing_status(meeting_id: str):
     """
     Get the current processing status of a meeting transcript.
-    
+
     Returns detailed information about the processing progress,
     including current stage, percentage complete, and any errors.
     """
