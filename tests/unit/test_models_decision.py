@@ -82,7 +82,9 @@ class TestDecision:
     def test_should_validate_made_by_format(self, valid_decision_data):
         """Test made_by field validation."""
         # Empty name
-        with pytest.raises(ValidationError, match="String should have at least 1 character"):
+        with pytest.raises(
+            ValidationError, match="String should have at least 1 character"
+        ):
             Decision(**{**valid_decision_data, "made_by": ""})
 
         # Invalid characters

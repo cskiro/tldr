@@ -69,7 +69,9 @@ class TestTranscriptInput:
             )
 
         # Too short
-        with pytest.raises(ValidationError, match="String should have at least 1 character"):
+        with pytest.raises(
+            ValidationError, match="String should have at least 1 character"
+        ):
             TranscriptInput(**{**valid_transcript_data, "meeting_id": ""})
 
         # Too long
@@ -140,7 +142,9 @@ class TestTranscriptInput:
     def test_should_validate_participants_list(self, valid_transcript_data):
         """Test participants list validation."""
         # Empty list
-        with pytest.raises(ValidationError, match="List should have at least 1 item after validation"):
+        with pytest.raises(
+            ValidationError, match="List should have at least 1 item after validation"
+        ):
             TranscriptInput(**{**valid_transcript_data, "participants": []})
 
         # Too many participants
@@ -285,7 +289,9 @@ class TestMeetingSummary:
     def test_should_validate_key_topics(self, valid_summary_data):
         """Test key topics validation."""
         # Too few topics
-        with pytest.raises(ValidationError, match="List should have at least 1 item after validation"):
+        with pytest.raises(
+            ValidationError, match="List should have at least 1 item after validation"
+        ):
             MeetingSummary(**{**valid_summary_data, "key_topics": []})
 
         # Too many topics

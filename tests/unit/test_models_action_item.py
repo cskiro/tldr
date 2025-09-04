@@ -81,7 +81,9 @@ class TestActionItem:
     def test_should_validate_assignee_format(self, valid_action_item_data):
         """Test assignee name validation."""
         # Empty assignee
-        with pytest.raises(ValidationError, match="String should have at least 1 character"):
+        with pytest.raises(
+            ValidationError, match="String should have at least 1 character"
+        ):
             ActionItem(**{**valid_action_item_data, "assignee": ""})
 
         # Invalid characters
@@ -266,7 +268,9 @@ class TestActionItemUpdate:
             ActionItemUpdate(task="hi")
 
         # Invalid assignee
-        with pytest.raises(ValidationError, match="String should have at least 1 character"):
+        with pytest.raises(
+            ValidationError, match="String should have at least 1 character"
+        ):
             ActionItemUpdate(assignee="")
 
         # Invalid estimated hours
