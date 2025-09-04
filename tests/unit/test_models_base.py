@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from pydantic import ValidationError
 
 from src.models.base import (
     APIResponse,
@@ -57,11 +58,14 @@ class TestBaseModelWithConfig:
 
     def test_should_validate_default_values(self):
         """Test that default values are validated."""
-
-        with pytest.raises(ValueError):
-
-            class TestModel(BaseModelWithConfig):
-                value: int = "invalid_default"
+        
+        # Pydantic V2 validates on instantiation, not class definition
+        class TestModel(BaseModelWithConfig):
+            value: int = "invalid_default"  # type: ignore
+            
+        # The validation happens when creating an instance
+        with pytest.raises((ValidationError, ValueError)):
+            TestModel()
 
 
 class TestTimestampedModel:
