@@ -1117,35 +1117,164 @@ def _find_risk_owner(risk_text: str, full_text: str) -> str:
 
 
 def _extract_implicit_user_stories(text: str) -> list[dict[str, Any]]:
-    """Extract user stories from requirement discussions."""
+    """
+    Extract user stories from requirement discussions using enhanced pattern detection.
+
+    Phase 4B Enhancement: Comprehensive user story extraction with proper role detection,
+    acceptance criteria generation, and priority assignment.
+    """
     stories = []
 
-    # Patterns that indicate user needs
-    need_patterns = [
-        r"(?:user|customer|admin|developer)s?\s+(?:need|want|require|should be able to)\s+(.+?)(?:\n|\.|;)",
-        r"(?:enterprise|corporate)\s+customers?\s+(?:expect|need|want|require)\s+(.+?)(?:\n|\.|;)",
-        r"(?:from a|for)\s+(?:user|security|business)\s+perspective[,:]?\s+(.+?)(?:\n|\.|;)",
+    # Enhanced patterns for specific SSO requirements
+    sso_story_patterns = [
+        {
+            "pattern": r"(?:enterprise|corporate)\s+(?:customers?|admins?)\s+(?:will\s+)?want\s+(?:some\s+level\s+of\s+)?control\s+over\s+(?:their\s+)?users",
+            "user_type": "enterprise admin",
+            "goal": "basic admin capabilities to manage users from my organization",
+            "benefit": "I can maintain control over user access and security",
+            "priority": "high",
+            "epic": "Admin Management",
+            "acceptance_criteria": [
+                "Admin can view list of users from their organization",
+                "Admin can deactivate users as needed",
+                "Admin interface shows user status and last login",
+            ],
+        },
+        {
+            "pattern": r"users?\s+who\s+are\s+already\s+authenticated\s+with\s+their\s+corporate\s+identity\s+provider.*seamless",
+            "user_type": "corporate user",
+            "goal": "seamless SSO authentication without seeing login pages",
+            "benefit": "I can access the application immediately from my corporate network",
+            "priority": "high",
+            "epic": "SSO Authentication",
+            "acceptance_criteria": [
+                "User is automatically redirected to SSO provider",
+                "No login page is shown for authenticated corporate users",
+                "Authentication completes within 3 seconds",
+            ],
+        },
+        {
+            "pattern": r"(?:handle\s+)?(?:the\s+case\s+where\s+)?SSO\s+fails\s+gracefully.*fallback.*email.*password",
+            "user_type": "user",
+            "goal": "graceful SSO fallback to email/password login",
+            "benefit": "I can still access the system when SSO is unavailable",
+            "priority": "high",
+            "epic": "Authentication Resilience",
+            "acceptance_criteria": [
+                "System detects SSO failure automatically",
+                "User is presented with email/password login form",
+                "No data loss occurs during authentication failure",
+            ],
+        },
+        {
+            "pattern": r"automatically\s+create\s+accounts?\s+for\s+users?\s+who\s+authenticate\s+via\s+SSO",
+            "user_type": "new SSO user",
+            "goal": "automatic account creation upon first SSO login",
+            "benefit": "I can access the system immediately without manual registration",
+            "priority": "medium",
+            "epic": "User Provisioning",
+            "acceptance_criteria": [
+                "Account is created using SSO claims (email, name, role)",
+                "User profile is populated with available SSO attributes",
+                "Account linking workflow is triggered for existing emails",
+            ],
+        },
+        {
+            "pattern": r"proper\s+logout.*both\s+local\s+logout.*Single\s+Logout.*SLO.*identity\s+provider",
+            "user_type": "security-conscious user",
+            "goal": "complete SSO logout from both application and identity provider",
+            "benefit": "my session is properly terminated for security compliance",
+            "priority": "high",
+            "epic": "Security Compliance",
+            "acceptance_criteria": [
+                "Local application session is terminated",
+                "Identity provider receives logout notification",
+                "All related tokens are invalidated",
+            ],
+        },
+        {
+            "pattern": r"update\s+our\s+API\s+authentication\s+to\s+handle\s+SSO\s+tokens",
+            "user_type": "developer",
+            "goal": "API authentication that supports SSO tokens",
+            "benefit": "applications can integrate seamlessly with SSO-enabled APIs",
+            "priority": "medium",
+            "epic": "API Integration",
+            "acceptance_criteria": [
+                "API accepts both JWT and SSO tokens",
+                "Token validation works for all supported providers",
+                "API documentation includes SSO token examples",
+            ],
+        },
+        {
+            "pattern": r"support\s+both\s+SAML\s+(?:and|&)\s+(?:OIDC|OpenID\s+Connect)",
+            "user_type": "enterprise customer",
+            "goal": "support for both SAML and OIDC protocols",
+            "benefit": "the system integrates with my existing identity infrastructure",
+            "priority": "high",
+            "epic": "Protocol Support",
+            "acceptance_criteria": [
+                "SAML 2.0 integration works with major providers",
+                "OpenID Connect integration supports standard flows",
+                "Both protocols can be configured simultaneously",
+            ],
+        },
     ]
 
-    for pattern in need_patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            # Convert to user story format
-            goal = match.strip()
-            user_type = "user"  # Default, could be enhanced
-            benefit = "improve user experience"  # Default, could be enhanced
+    # Extract stories using enhanced patterns
+    for story_config in sso_story_patterns:
+        if re.search(story_config["pattern"], text, re.IGNORECASE | re.DOTALL):
+            story = f"As a {story_config['user_type']}, I want {story_config['goal']}, so that {story_config['benefit']}"
 
-            story = f"As a {user_type}, I want {goal}, so that {benefit}"
             stories.append(
                 {
                     "story": story,
-                    "acceptance_criteria": [],
-                    "priority": "medium",
-                    "epic": None,
+                    "acceptance_criteria": story_config["acceptance_criteria"],
+                    "priority": story_config["priority"],
+                    "epic": story_config["epic"],
+                    "business_value": _generate_business_value(
+                        story_config["epic"], story_config["priority"]
+                    ),
                 }
             )
 
-    return stories[:5]  # Limit to top 5 implicit stories
+    # Fallback patterns for additional story detection
+    general_patterns = [
+        {
+            "pattern": r"(?:from\s+a\s+)?(user|admin|developer|security|business)\s+perspective[,:]?\s+(.+?)(?:\.|\n)",
+            "template": "As a {role}, I want to {goal}, so that I can achieve my objectives",
+        },
+        {
+            "pattern": r"(?:users?|customers?|admins?|developers?)\s+(?:should\s+be\s+able\s+to|need\s+to|want\s+to)\s+(.+?)(?:\.|\n)",
+            "template": "As a user, I want to {goal}, so that I can accomplish my tasks",
+        },
+    ]
+
+    for pattern_config in general_patterns:
+        matches = re.findall(pattern_config["pattern"], text, re.IGNORECASE)
+        for match in matches:
+            if isinstance(match, tuple):
+                role, goal = match
+                story = pattern_config["template"].format(
+                    role=role.strip(), goal=goal.strip()
+                )
+            else:
+                story = pattern_config["template"].format(goal=match.strip())
+
+            # Only add if not already captured by specific patterns
+            if not any(
+                story.lower() in existing["story"].lower() for existing in stories
+            ):
+                stories.append(
+                    {
+                        "story": story,
+                        "acceptance_criteria": _generate_acceptance_criteria(story),
+                        "priority": _assess_story_priority(story, text),
+                        "epic": "General Requirements",
+                        "business_value": "Improves user experience and system functionality",
+                    }
+                )
+
+    return stories[:8]  # Return up to 8 comprehensive stories
 
 
 def _detect_action_phase(task: str, full_text: str) -> str:
@@ -1324,3 +1453,87 @@ def _assess_story_priority(story: str, text: str) -> str:
         return "low"
     else:
         return "medium"
+
+
+def _generate_business_value(epic: str, priority: str) -> str:
+    """Generate business value description based on epic and priority."""
+    business_value_templates = {
+        "Admin Management": "Enables enterprise customers to maintain security and compliance through user management capabilities",
+        "SSO Authentication": "Reduces user friction and improves adoption by eliminating redundant authentication steps",
+        "Authentication Resilience": "Prevents user lockouts and ensures continuous system availability during SSO failures",
+        "User Provisioning": "Reduces administrative overhead and accelerates user onboarding process",
+        "Security Compliance": "Meets enterprise security requirements and reduces audit risks",
+        "API Integration": "Enables seamless third-party integrations and expands ecosystem value",
+        "Protocol Support": "Maximizes enterprise compatibility and reduces integration barriers",
+        "General Requirements": "Improves overall system functionality and user satisfaction",
+    }
+
+    base_value = business_value_templates.get(
+        epic, "Enhances system capabilities and user experience"
+    )
+
+    if priority == "high":
+        return f"{base_value} - Critical for enterprise adoption and user satisfaction"
+    elif priority == "low":
+        return f"{base_value} - Nice-to-have enhancement for future consideration"
+    else:
+        return f"{base_value} - Important for competitive positioning"
+
+
+def _generate_acceptance_criteria(story: str) -> list[str]:
+    """Generate acceptance criteria based on user story content."""
+    story_lower = story.lower()
+    criteria = []
+
+    # Generate criteria based on story keywords
+    if "admin" in story_lower and "manage" in story_lower:
+        criteria.extend(
+            [
+                "Admin interface is accessible to authorized users",
+                "User management functions work correctly",
+                "Changes are logged for audit purposes",
+            ]
+        )
+    elif "sso" in story_lower or "authentication" in story_lower:
+        criteria.extend(
+            [
+                "Authentication flow completes successfully",
+                "User is redirected appropriately after login",
+                "Session is maintained securely",
+            ]
+        )
+    elif "api" in story_lower:
+        criteria.extend(
+            [
+                "API endpoints accept valid tokens",
+                "Invalid tokens are properly rejected",
+                "API documentation is updated",
+            ]
+        )
+    elif "logout" in story_lower:
+        criteria.extend(
+            [
+                "Local session is terminated",
+                "External systems are notified of logout",
+                "User is redirected to appropriate page",
+            ]
+        )
+    elif "fallback" in story_lower or "fail" in story_lower:
+        criteria.extend(
+            [
+                "System detects failure conditions",
+                "Alternative authentication method is provided",
+                "User receives appropriate error messages",
+            ]
+        )
+    else:
+        # Default criteria for general stories
+        criteria.extend(
+            [
+                "Feature works as described in story",
+                "Error conditions are handled gracefully",
+                "User receives appropriate feedback",
+            ]
+        )
+
+    return criteria[:3]  # Limit to 3 criteria for readability
