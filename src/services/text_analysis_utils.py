@@ -8,68 +8,70 @@ from typing import Any
 def normalize_speaker_name(name: str) -> str:
     """
     Normalize speaker names for consistent identification.
-    
+
     Args:
         name: Raw speaker name from transcript
-        
+
     Returns:
         Normalized speaker name
     """
     # Remove common titles
-    titles = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'CEO', 'CTO', 'VP']
+    titles = ["Mr.", "Ms.", "Mrs.", "Dr.", "Prof.", "CEO", "CTO", "VP"]
     for title in titles:
-        name = name.replace(title, '').strip()
-    
+        name = name.replace(title, "").strip()
+
     # Remove role indicators in parentheses
-    name = re.sub(r'\([^)]*\)', '', name).strip()
-    
+    name = re.sub(r"\([^)]*\)", "", name).strip()
+
     # Remove extra whitespace
-    name = ' '.join(name.split())
-    
+    name = " ".join(name.split())
+
     return name.strip()
 
 
 def deduplicate_speakers(participants: list[str]) -> list[str]:
     """
     Remove duplicate speakers using name similarity detection.
-    
+
     Args:
         participants: List of raw participant names
-        
+
     Returns:
         List of deduplicated participant names
     """
     normalized_mapping = {}
-    
+
     for participant in participants:
         norm_name = normalize_speaker_name(participant).lower()
-        
+
         # Check for existing similar names
         found_match = False
         for existing_norm, existing_full in list(normalized_mapping.items()):
             # Check if names are variations of each other
             existing_words = set(existing_norm.split())
             current_words = set(norm_name.split())
-            
+
             # If one name is subset of another (Sarah vs Sarah Chen)
-            if existing_words.issubset(current_words) or current_words.issubset(existing_words):
+            if existing_words.issubset(current_words) or current_words.issubset(
+                existing_words
+            ):
                 # Keep the longer, more specific name
                 if len(participant) > len(existing_full):
                     del normalized_mapping[existing_norm]
                     normalized_mapping[norm_name] = participant
                 found_match = True
                 break
-        
+
         if not found_match:
             normalized_mapping[norm_name] = participant
-    
+
     return list(normalized_mapping.values())
 
 
 def extract_participants_from_transcript(text: str) -> list[str]:
     """
     Extract participant names using comprehensive transcript patterns with enhanced detection.
-    
+
     Phase 4A Enhancement: Added support for markdown bold format and deduplication.
 
     Args:
@@ -121,34 +123,82 @@ def extract_participants_from_transcript(text: str) -> list[str]:
 
     # Filter out common false positives and short names
     false_positives = {
-        "The", "This", "That", "And", "But", "So", "Or", "If", "When", "Where", 
-        "How", "What", "Why", "We", "I", "You", "They", "He", "She", "It",
-        "Meeting", "Time", "Date", "Type", "Summary", "Notes", "Action", "Items",
-        "Next", "Steps", "Decisions", "Risks", "Issues", "PM", "PST", "EST",
+        "The",
+        "This",
+        "That",
+        "And",
+        "But",
+        "So",
+        "Or",
+        "If",
+        "When",
+        "Where",
+        "How",
+        "What",
+        "Why",
+        "We",
+        "I",
+        "You",
+        "They",
+        "He",
+        "She",
+        "It",
+        "Meeting",
+        "Time",
+        "Date",
+        "Type",
+        "Summary",
+        "Notes",
+        "Action",
+        "Items",
+        "Next",
+        "Steps",
+        "Decisions",
+        "Risks",
+        "Issues",
+        "PM",
+        "PST",
+        "EST",
         # Meeting transcript metadata
-        "Attendees", "Participants", "Meeting Type", "Duration", "Location",
-        "Agenda", "Minutes", "Recording", "Transcript", "Status", "Priority",
-        "Update", "Review", "Discussion", "Conclusion", "Overview", "Background"
+        "Attendees",
+        "Participants",
+        "Meeting Type",
+        "Duration",
+        "Location",
+        "Agenda",
+        "Minutes",
+        "Recording",
+        "Transcript",
+        "Status",
+        "Priority",
+        "Update",
+        "Review",
+        "Discussion",
+        "Conclusion",
+        "Overview",
+        "Background",
     }
-    
+
     # Clean and filter participants
     cleaned_participants = []
     for participant in participants:
         # Remove trailing punctuation and whitespace
-        cleaned = participant.strip().rstrip(':.,!?')
-        
+        cleaned = participant.strip().rstrip(":.,!?")
+
         # Skip if too short, is false positive, or doesn't look like a name
-        if (len(cleaned) < 2 or 
-            cleaned in false_positives or 
-            cleaned.lower() in [fp.lower() for fp in false_positives] or
-            not re.match(r'^[A-Z][a-zA-Z\s\.]+$', cleaned)):
+        if (
+            len(cleaned) < 2
+            or cleaned in false_positives
+            or cleaned.lower() in [fp.lower() for fp in false_positives]
+            or not re.match(r"^[A-Z][a-zA-Z\s\.]+$", cleaned)
+        ):
             continue
-            
+
         cleaned_participants.append(cleaned)
 
     # Apply deduplication to handle name variations
     deduplicated = deduplicate_speakers(cleaned_participants)
-    
+
     # Sort for consistent output
     return sorted(deduplicated)
 
