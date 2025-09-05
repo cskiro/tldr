@@ -431,6 +431,75 @@ def identify_key_topics_from_text(text: str) -> list[str]:
     return topics[:10]  # Return top 10 topics
 
 
+def _extract_meeting_duration(text: str) -> int:
+    """
+    Extract actual meeting duration from transcript timestamps.
+    
+    Args:
+        text: Raw transcript text
+        
+    Returns:
+        Duration in minutes, or estimated duration if timestamps not found
+    """
+    import re
+    
+    # Look for explicit time ranges in headers
+    time_range_patterns = [
+        r"(\d{1,2}:\d{2})\s*(?:AM|PM)\s*[-–]\s*(\d{1,2}:\d{2})\s*(?:AM|PM)",
+        r"Time:\*?\*?\s*(\d{1,2}:\d{2})\s*(?:AM|PM)\s*[-–]\s*(\d{1,2}:\d{2})\s*(?:AM|PM)",
+    ]
+    
+    for pattern in time_range_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                start_str, end_str = match.groups()
+                
+                # Extract hours and minutes
+                start_parts = start_str.split(':')
+                end_parts = end_str.split(':') 
+                
+                start_hour = int(start_parts[0])
+                start_min = int(start_parts[1])
+                end_hour = int(end_parts[0])
+                end_min = int(end_parts[1])
+                
+                # Handle AM/PM conversion
+                am_pm_text = match.group(0).upper()
+                if 'PM' in am_pm_text:
+                    if start_hour < 12:
+                        start_hour += 12
+                    if end_hour < 12:
+                        end_hour += 12
+                elif 'AM' in am_pm_text and start_hour == 12:
+                    start_hour = 0
+                
+                # Calculate duration
+                start_total_min = start_hour * 60 + start_min
+                end_total_min = end_hour * 60 + end_min
+                
+                duration = end_total_min - start_total_min
+                if duration > 0:
+                    return duration
+                    
+            except (ValueError, IndexError):
+                continue
+    
+    # Fallback: look for "Meeting ended at" pattern
+    end_pattern = r"Meeting ended at (\d{1,2}):(\d{2})\s*(AM|PM)"
+    end_match = re.search(end_pattern, text, re.IGNORECASE)
+    if end_match:
+        # For now, assume reasonable meeting duration if we only have end time
+        # This could be enhanced with start time detection
+        return 90  # Default assumption for meetings with detected end time
+    
+    # Final fallback: more realistic word-count estimation
+    word_count = len(text.split())
+    # Meetings typically have 100-120 words per minute (including discussion/pauses)
+    estimated_duration = max(15, word_count // 110)
+    return estimated_duration
+
+
 def generate_executive_summary(
     text: str, participants: list[str], topics: list[str]
 ) -> str:
@@ -445,10 +514,8 @@ def generate_executive_summary(
     Returns:
         Executive summary string
     """
-    word_count = len(text.split())
-    estimated_duration = max(
-        5, word_count // 150
-    )  # Rough estimate: 150 words per minute
+    # Extract actual meeting duration from timestamps
+    meeting_duration = _extract_meeting_duration(text)
 
     participant_count = len(participants)
     topic_summary = ", ".join(topics[:5]) if topics else "general discussion"
@@ -469,9 +536,9 @@ def generate_executive_summary(
 
     summary_parts.append(f"involved {participant_count} participants")
 
-    if estimated_duration:
+    if meeting_duration:
         summary_parts.append(
-            f"and covered {topic_summary} over approximately {estimated_duration} minutes"
+            f"and covered {topic_summary} over approximately {meeting_duration} minutes"
         )
     else:
         summary_parts.append(f"covering {topic_summary}")
@@ -815,27 +882,37 @@ def extract_risks_from_text(text: str) -> list[dict[str, Any]]:
         "requirement",
     ]
 
-    # Risk indication patterns
+    # Enhanced risk indication patterns - Fixed text corruption issues
     risk_patterns = [
+        # Complete sentence patterns for explicit risks
         (
-            r"(?:risk|concern|issue|problem|challenge|blocker|threat)[:.]?\s*(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            r"(?:the\s+)?(?:main\s+|primary\s+|key\s+|major\s+)?(?:risk|concern|issue|problem|challenge|blocker|threat)\s+(?:is|would be|could be|here is|we have)\s+([^.!?]+[.!?])",
             "explicit",
         ),
+        # Question-based risk patterns
         (
-            r"(?:might|could|may|potentially|possibly)\s+(?:be|cause|lead to|result in)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            r"(?:what if|what about|what happens if)\s+([^?]+\?)",
+            "conditional", 
+        ),
+        # Potential/modal risk patterns - complete phrases
+        (
+            r"(?:might|could|may|potentially|possibly)\s+(?:be|cause|lead to|result in)\s+([^.!?,\n]+(?:[.!?]|(?=\s+[A-Z])))",
             "potential",
         ),
+        # Caution/warning patterns - complete statements
         (
-            r"(?:if we|what if|concern about|worried about|afraid)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
-            "conditional",
+            r"(?:we need to be careful|watch out|be aware|need to consider)\s+(?:of|about|that|with)?\s*([^.!?,\n]+(?:[.!?]|(?=\s+[A-Z])))",
+            "caution",
         ),
+        # Problem statement patterns
         (
-            r"(?:problem|issue|challenge)\s+(?:is|would be|could be)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
+            r"(?:the\s+)?(?:problem|issue|challenge|difficulty)\s+(?:is|would be|could be|we face|here is)\s+([^.!?,\n]+(?:[.!?]|(?=\s+[A-Z])))",
             "problem",
         ),
+        # Negative outcome patterns
         (
-            r"(?:we need to be careful|watch out|be aware)\s+(?:of|about|that)\s+(.+?)(?:\n|\.|;|,(?=\s[A-Z]))",
-            "caution",
+            r"(?:if we don't|unless we|without)\s+([^,\n]+),\s*([^.!?\n]+[.!?])",
+            "consequence",
         ),
     ]
 
@@ -843,8 +920,19 @@ def extract_risks_from_text(text: str) -> list[dict[str, Any]]:
     for pattern, risk_type in risk_patterns:
         matches = re.findall(pattern, text, re.IGNORECASE | re.MULTILINE)
         for match in matches:
-            risk_text = match.strip()
-            if len(risk_text) > 10:  # Filter out very short matches
+            # Handle tuple results from patterns with multiple capture groups
+            if isinstance(match, tuple):
+                # For consequence patterns: "if we don't X, Y happens"
+                if risk_type == "consequence":
+                    risk_text = f"Without {match[0].strip()}, {match[1].strip()}"
+                else:
+                    # Use the longest captured group
+                    risk_text = max(match, key=len).strip()
+            else:
+                risk_text = match.strip()
+            
+            # Enhanced filtering: ensure meaningful content
+            if len(risk_text) > 15 and not risk_text.startswith(('y ', '-> ', 's ', '-')):
                 # Determine category
                 category = _categorize_risk(
                     risk_text, technical_keywords, security_keywords, business_keywords
